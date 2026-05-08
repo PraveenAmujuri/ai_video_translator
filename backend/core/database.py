@@ -83,11 +83,14 @@ async def get_job(db: AsyncSession, job_id: str) -> Optional[Job]:
     return result.scalar_one_or_none()
 
 
-async def create_job(db: AsyncSession, job_id: str, **kwargs) -> Job:
-    job = Job(id=job_id, **kwargs)
+async def create_job(db: AsyncSession, **kwargs):
+    job = Job(**kwargs)
+
     db.add(job)
+
     await db.commit()
     await db.refresh(job)
+
     return job
 
 

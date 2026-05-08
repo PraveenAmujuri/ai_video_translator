@@ -7,8 +7,8 @@ import uuid
 from pathlib import Path
 from typing import Optional, Tuple
 
-from config import settings
-from utils import run_subprocess
+from core.config import settings
+from core.utils import run_subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +20,12 @@ async def download_youtube(url: str, job_id: str) -> Tuple[Path, str, float]:
 
     cmd = [
         "yt-dlp",
-        "--format", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-        "--output", output_template,
-        "--no-playlist",
-        "--write-info-json",
-        "--restrict-filenames",
+        "--js-runtimes",
+        "node",
+        "-f",
+        "mp4",
+        "-o",
+        str(output_template),
         url,
     ]
 

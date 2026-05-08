@@ -1,0 +1,64 @@
+import { useState } from "react";
+
+import UploadPanel from "./components/UploadPanel";
+import VideoPlayer from "./components/VideoPlayer";
+import ProgressTracker from "./components/ProgressTracker";
+import LanguageSelector from "./components/LanguageSelector";
+import VoiceSelector from "./components/VoiceSelector";
+
+export default function App() {
+  const [jobId, setJobId] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState("idle");
+  const [streamUrl, setStreamUrl] = useState(null);
+
+  const [language, setLanguage] = useState("en");
+  const [voice, setVoice] = useState("en-US-AriaNeural");
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-white p-6">
+      <div className="max-w-7xl mx-auto">
+
+        <h1 className="text-4xl font-bold mb-8">
+          AI Video Translator
+        </h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <div className="space-y-6">
+
+            <UploadPanel
+              setJobId={setJobId}
+              setStatus={setStatus}
+            />
+
+            <LanguageSelector
+              language={language}
+              setLanguage={setLanguage}
+            />
+
+            <VoiceSelector
+              voice={voice}
+              setVoice={setVoice}
+            />
+
+            <ProgressTracker
+              jobId={jobId}
+              progress={progress}
+              setProgress={setProgress}
+              setStatus={setStatus}
+              setStreamUrl={setStreamUrl}
+              status={status}
+            />
+
+          </div>
+
+          <div>
+            <VideoPlayer streamUrl={streamUrl} />
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}

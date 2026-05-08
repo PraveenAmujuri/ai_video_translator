@@ -31,12 +31,20 @@ async def process_translation_job(job_id: str):
 
 
 async def _run_pipeline(job_id: str):
-    from media_service import (
+    from services.media_service import  (
         download_youtube, extract_audio, extract_background_audio,
         merge_video_audio_subtitles, generate_hls, get_media_duration,
     )
-    from ai_service import transcribe_audio, translate_segments, generate_tts_audio
-    from subtitle_service import generate_srt, generate_vtt
+    from services.ai_service import (
+    transcribe_audio,
+    translate_segments,
+    generate_tts_audio,
+    )
+
+    from services.subtitle_service import (
+        generate_srt,
+        generate_vtt,
+    )
 
     async with AsyncSessionLocal() as db:
         job = await get_job(db, job_id)
