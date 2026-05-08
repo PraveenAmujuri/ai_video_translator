@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy
+aiosqlite
+pydantic
+pydantic-settings
+python-multipart
+aiofiles
+faster-whisper
+openai-whisper
+deep-translator
+edge-tts
+yt-dlp
+ffmpeg-python
+torch
+numpy

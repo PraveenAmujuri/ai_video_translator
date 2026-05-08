@@ -1,0 +1,86 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.env/
+.venv/
+
+# Environment Variables
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads / Generated Media
+uploads/
+outputs/
+hls/
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Build / Distribution
+build/
+dist/
+*.egg-info/
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Temporary Files
+temp/
+tmp/
+
+# FFmpeg Generated
+*.ts
+*.m3u8
+
+# Whisper / AI Cache
+models/
+*.pt
+*.bin
+
+# Coverage
+.coverage
+htmlcov/
+
+# Runtime
+*.pid
+*.seed
+
+# Node (if frontend later inside same repo)
+node_modules/
+
+# Generated Audio/Video
+*.mp3
+*.wav
+*.aac
+*.flac
+*.mp4
+*.mov
+*.mkv
+*.webm
+
+# Secrets
+secrets.json
+credentials.json
