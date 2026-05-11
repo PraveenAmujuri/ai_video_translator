@@ -101,61 +101,44 @@ async def extract_background_audio(video_path: Path, job_id: str) -> Path:
 
     return bg_path
 
-
 async def merge_video_audio_subtitles(
-    video_path: Path,
-    dubbed_audio_path: Path,
-    subtitle_path: Path,
-    job_id: str,
-    background_audio_path: Optional[Path] = None,
-    background_volume: float = 0.3,
-) -> Path:
-    output_path = settings.OUTPUT_DIR / job_id / "output.mp4"
+    video_path,
+    audio_path,
+    subtitle_path,
+    output_path,
+):
+    from core.utils import run_subprocess
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if background_audio_path and background_audio_path.exists():
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-i", str(dubbed_audio_path),
-            "-i", str(background_audio_path),
-            "-filter_complex",
-            f"[1:a]volume=1.0[dubbed];[2:a]volume={background_volume}[bg];[dubbed][bg]amix=inputs=2:duration=first[outa]",
-            "-map", "0:v",
-            "-map", "[outa]",
-            "-vf", f"subtitles={str(subtitle_path)}:force_style='FontSize=20,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&,Outline=2'",
-            "-c:v", "libx264",
-            "-preset", "fast",
-            "-crf", "23",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-movflags", "+faststart",
-            str(output_path),
-        ]
-    else:
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-i", str(dubbed_audio_path),
-            "-map", "0:v",
-            "-map", "1:a",
-            "-vf", f"subtitles={str(subtitle_path)}:force_style='FontSize=20,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&,Outline=2'",
-            "-c:v", "libx264",
-            "-preset", "fast",
-            "-crf", "23",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-movflags", "+faststart",
-            str(output_path),
-        ]
+    subtitle_path = str(subtitle_path).replace("\\", "/").replace(":", "\\:")
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i", str(video_path),
+        "-i", str(audio_path),
+
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+
+        "-c:v", "copy",
+        "-c:a", "aac",
+
+        "-vf",
+        f"subtitles='{subtitle_path}'",
+
+        "-shortest",
+
+        str(output_path),
+    ]
 
     returncode, stdout, stderr = await run_subprocess(cmd)
+
     if returncode != 0:
-        raise RuntimeError(f"Video merge failed: {stderr}")
+        raise RuntimeError(stderr)
 
     return output_path
-
-
 async def generate_hls(video_path: Path, job_id: str) -> Path:
     hls_dir = settings.HLS_DIR / job_id
     hls_dir.mkdir(parents=True, exist_ok=True)
