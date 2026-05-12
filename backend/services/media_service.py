@@ -101,43 +101,40 @@ async def extract_background_audio(video_path: Path, job_id: str) -> Path:
 
     return bg_path
 
+# In media_service.py
 async def merge_video_audio_subtitles(
-    video_path,
-    audio_path,
-    subtitle_path,
-    output_path,
+    video_path: Path,
+    dubbed_audio_path: Path,
+    subtitle_path: Path,
+    output_path: Path = None,
+    job_id: str = None,
+    background_audio_path: Optional[Path] = None,
+    background_volume: float = 0.3,
+    **kwargs
 ):
     from core.utils import run_subprocess
+    from core.config import settings
+    
+    if output_path is None and job_id:
+        output_dir = settings.OUTPUT_DIR / job_id
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / "output.mp4"
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    sub_path = str(subtitle_path).replace("\\", "/").replace(":", "\\:")
+    cmd = ["ffmpeg", "-y", "-i", str(video_path), "-i", str(dubbed_audio_path)]
 
-    subtitle_path = str(subtitle_path).replace("\\", "/").replace(":", "\\:")
+    if background_audio_path and background_audio_path.exists():
+        cmd.extend(["-i", str(background_audio_path)])
+        # Mix dubbed voice (1:a) with background (2:a)
+        filter_complex = f"[1:a]volume=1.0[v]; [2:a]volume={background_volume}[bg]; [v][bg]amix=inputs=2:duration=first[aout]"
+        cmd.extend(["-filter_complex", filter_complex, "-map", "0:v:0", "-map", "[aout]"])
+    else:
+        cmd.extend(["-map", "0:v:0", "-map", "1:a:0"])
 
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-i", str(video_path),
-        "-i", str(audio_path),
-
-        "-map", "0:v:0",
-        "-map", "1:a:0",
-
-        "-c:v", "copy",
-        "-c:a", "aac",
-
-        "-vf",
-        f"subtitles='{subtitle_path}'",
-
-        "-shortest",
-
-        str(output_path),
-    ]
+    cmd.extend(["-c:v", "libx264", "-preset", "fast", "-c:a", "aac", "-vf", f"subtitles='{sub_path}'", "-shortest", str(output_path)])
 
     returncode, stdout, stderr = await run_subprocess(cmd)
-
-    if returncode != 0:
-        raise RuntimeError(stderr)
-
+    if returncode != 0: raise RuntimeError(f"FFmpeg Merge Error: {stderr}")
     return output_path
 async def generate_hls(video_path: Path, job_id: str) -> Path:
     hls_dir = settings.HLS_DIR / job_id

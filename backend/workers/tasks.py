@@ -141,7 +141,7 @@ async def _run_pipeline(job_id: str):
             message=f"Generating dubbed audio with voice {voice}..."
         )
 
-    tts_output = settings.UPLOAD_DIR / job_id / "dubbed_audio.mp3"
+    tts_output = settings.UPLOAD_DIR / job_id / "dubbed_audio.wav"
     dubbed_audio_path = await generate_tts_audio(
         translated_segments,
         voice=voice,

@@ -14,7 +14,6 @@ export default function App() {
 
   const [language, setLanguage] = useState("en");
   const [voice, setVoice] = useState("en-US-AriaNeural");
-
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6">
       <div className="max-w-7xl mx-auto">
@@ -27,20 +26,23 @@ export default function App() {
 
           <div className="space-y-6">
 
-            <UploadPanel
-              setJobId={setJobId}
-              setStatus={setStatus}
-            />
+<UploadPanel
+  setJobId={setJobId}
+  setStatus={setStatus}
+  language={language}
+  voice={voice}
+/>
 
             <LanguageSelector
               language={language}
               setLanguage={setLanguage}
             />
 
-            <VoiceSelector
-              voice={voice}
-              setVoice={setVoice}
-            />
+<VoiceSelector
+  voice={voice}
+  setVoice={setVoice}
+  targetLanguage={language}
+/>
 
             <ProgressTracker
               jobId={jobId}

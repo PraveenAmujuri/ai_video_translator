@@ -4,8 +4,9 @@ import api from "../services/api";
 export default function UploadPanel({
   setJobId,
   setStatus,
+  language,
+  voice,
 }) {
-
   const [youtubeUrl, setYoutubeUrl] = useState("");
 
   async function handleFileUpload(e) {
@@ -43,12 +44,12 @@ export default function UploadPanel({
     try {
       setStatus("processing");
 
-      const res = await api.post("/translate", {
-        youtube_url: youtubeUrl,
-        target_language: "en",
-        source_language: "auto",
-        voice: "en-US-AriaNeural",
-      });
+const res = await api.post("/translate", {
+  youtube_url: youtubeUrl,
+  target_language: language,
+  source_language: "auto",
+  voice: voice,
+});
 
       setJobId(res.data.job_id);
 
