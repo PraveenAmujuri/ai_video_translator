@@ -18,9 +18,12 @@ class Settings(BaseSettings):
     ALLOWED_VIDEO_TYPES: list = ["video/mp4", "video/webm", "video/avi", "video/mkv", "video/mov"]
     ALLOWED_AUDIO_TYPES: list = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/mp4"]
 
-    WHISPER_MODEL: str = os.getenv("WHISPER_MODEL", "base")
-    WHISPER_DEVICE: str = os.getenv("WHISPER_DEVICE", "cpu")
-    WHISPER_COMPUTE_TYPE: str = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+    WHISPER_MODEL: str = "base"
+    WHISPER_DEVICE: str = "cpu"
+    WHISPER_COMPUTE_TYPE: str = "int8"
+
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite"
 
     DEFAULT_VOICE: str = "en-US-AriaNeural"
     TTS_RATE: str = "+0%"

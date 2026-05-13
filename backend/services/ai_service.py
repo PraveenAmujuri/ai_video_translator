@@ -97,29 +97,36 @@ async def translate_segments(
     target_lang: str,
 ) -> List[Dict]:
 
-    from deep_translator import GoogleTranslator
+    import requests
+    import asyncio
+    import json
 
-    LANGUAGE_MAP = {
-        "en": "english",
-        "hi": "hindi",
-        "te": "telugu",
-        "ta": "tamil",
-        "ja": "japanese",
+    LANGUAGE_NAMES = {
+        "en": "English",
+        "hi": "Hindi",
+        "te": "Telugu",
+        "ta": "Tamil",
+        "ja": "Japanese",
     }
 
-    source_lang = LANGUAGE_MAP.get(
+    target_language_name = LANGUAGE_NAMES.get(
+        target_lang,
+        target_lang,
+    )
+
+    source_language_name = LANGUAGE_NAMES.get(
         source_lang,
-        "english",
+        source_lang,
     )
 
-    target_lang = LANGUAGE_MAP.get(
-        target_lang,
-        target_lang,
-    )
+    api_key = settings.GEMINI_API_KEY
+    
+    model_name = settings.GEMINI_MODEL
 
-    logger.info(
-        f"Translating {source_lang} -> {target_lang}"
-    )
+    if not api_key:
+        raise RuntimeError(
+            "Gemini API key missing"
+        )
 
     if source_lang == target_lang:
 
@@ -128,14 +135,9 @@ async def translate_segments(
 
         return segments
 
-    translator = GoogleTranslator(
-        source="auto",
-        target=target_lang,
-    )
+    translated_segments = []
 
     loop = asyncio.get_event_loop()
-
-    translated_segments = []
 
     for seg in segments:
 
@@ -147,25 +149,101 @@ async def translate_segments(
             translated_segments.append(seg)
             continue
 
+        prompt = f"""
+You are a professional subtitle localizer.
+
+Translate the following spoken {source_language_name}
+into natural conversational {target_language_name}
+for AI video dubbing.
+
+RULES:
+- Keep meaning accurate
+- Keep subtitles short and natural
+- Do NOT translate word-by-word
+- Preserve tone and conversational flow
+- Return ONLY valid JSON
+- Do NOT add markdown
+- Do NOT explain anything
+- Do NOT add extra keys
+
+RESPONSE FORMAT:
+{{
+  "translated": "translated text here"
+}}
+
+TEXT:
+{original}
+"""
+
+        url = (
+            "https://generativelanguage.googleapis.com/"
+            f"v1beta/models/{model_name}:generateContent?key={api_key}"
+        )
+
+        body = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.3,
+                "topP": 0.8,
+                "topK": 20,
+                "maxOutputTokens": 256,
+            }
+        }
+
+        def _translate():
+
+            response = requests.post(
+                url,
+                json=body,
+                timeout=40,
+            )
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            text = data["candidates"][0]["content"]["parts"][0]["text"]
+
+            text = text.strip()
+
+            if text.startswith("```json"):
+                text = text.replace("```json", "")
+                text = text.replace("```", "")
+                text = text.strip()
+
+            parsed = json.loads(text)
+
+            translated = parsed.get(
+                "translated",
+                original,
+            )
+
+            return translated.strip()
+
         try:
 
             translated = await loop.run_in_executor(
                 None,
-                translator.translate,
-                original,
+                _translate,
+            )
+
+            logger.info(
+                f"{original} -> {translated}"
             )
 
             seg["translated"] = translated
 
-            logger.info(
-                f"Translated: {translated}"
-            )
-
         except Exception as e:
 
-            logger.error(
-                f"Translation failed: {e}"
-            )
+            logger.exception(e)
 
             seg["translated"] = original
 
