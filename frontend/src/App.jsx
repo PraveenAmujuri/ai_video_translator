@@ -7,15 +7,27 @@ import LanguageSelector from "./components/LanguageSelector";
 import VoiceSelector from "./components/VoiceSelector";
 
 export default function App() {
-  const [jobId, setJobId] = useState(null);
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("idle");
-  const [streamUrl, setStreamUrl] = useState(null);
 
-  const [language, setLanguage] = useState("en");
-  const [voice, setVoice] = useState("en-US-AriaNeural");
+  const [jobId, setJobId] = useState(null);
+
+  const [progress, setProgress] = useState(0);
+
+  const [status, setStatus] = useState("idle");
+
+  const [videoUrl, setVideoUrl] = useState(null);
+
+  const [dubbedAudioUrl, setDubbedAudioUrl] = useState(null);
+
+  const [language, setLanguage] = useState("te");
+
+  const [voice, setVoice] = useState(
+    "te-IN-MohanNeural"
+  );
+
   return (
+
     <div className="min-h-screen bg-slate-950 text-white p-6">
+
       <div className="max-w-7xl mx-auto">
 
         <h1 className="text-4xl font-bold mb-8">
@@ -38,29 +50,34 @@ export default function App() {
               setLanguage={setLanguage}
             />
 
-<VoiceSelector
-  voice={voice}
-  setVoice={setVoice}
-  targetLanguage={language}
-/>
+            <VoiceSelector
+              voice={voice}
+              setVoice={setVoice}
+              targetLanguage={language}
+            />
 
             <ProgressTracker
               jobId={jobId}
               progress={progress}
               setProgress={setProgress}
               setStatus={setStatus}
-              setStreamUrl={setStreamUrl}
+              setVideoUrl={setVideoUrl}
+              setDubbedAudioUrl={setDubbedAudioUrl}
               status={status}
             />
 
           </div>
 
-          <div>
-            <VideoPlayer streamUrl={streamUrl} />
-          </div>
+          <VideoPlayer
+            videoUrl={videoUrl}
+            dubbedAudioUrl={dubbedAudioUrl}
+          />
 
         </div>
+
       </div>
+
     </div>
+
   );
 }

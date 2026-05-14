@@ -442,7 +442,6 @@ async def generate_tts_audio(
             )
 
     from core.utils import run_subprocess
-
     cmd = [
         "ffmpeg",
         "-y",
@@ -452,8 +451,21 @@ async def generate_tts_audio(
         "0",
         "-i",
         str(concat_txt),
-        "-c",
-        "copy",
+
+        "-vn",
+
+        "-ar",
+        "44100",
+
+        "-ac",
+        "2",
+
+        "-c:a",
+        "libmp3lame",
+
+        "-b:a",
+        "192k",
+
         str(output_path),
     ]
 

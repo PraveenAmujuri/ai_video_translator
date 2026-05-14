@@ -40,7 +40,11 @@ app.mount(
     StaticFiles(directory=settings.OUTPUT_DIR),
     name="outputs",
 )
-
+app.mount(
+    "/uploads",
+    StaticFiles(directory="uploads"),
+    name="uploads",
+)
 app.mount(
     "/hls",
     StaticFiles(directory=settings.HLS_DIR),

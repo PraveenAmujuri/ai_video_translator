@@ -55,7 +55,21 @@ async def upload_file(file: UploadFile = File(...)):
         media_type=media_type,
     )
 
+@router.get("/job/{job_id}/streams")
+async def get_job_streams(job_id: str):
 
+    async with AsyncSessionLocal() as db:
+
+        job = await get_job(
+            db,
+            job_id,
+        )
+
+    return {
+        "video_url": job.video_stream_url,
+        "dubbed_audio_url": f"/uploads/{job_id}/dubbed_audio.mp3",
+        "subtitle_url": f"/outputs/{job_id}/subtitles.vtt",
+    }
 @router.post("/translate")
 async def translate(payload: JobCreate):
     job_id = str(uuid.uuid4())

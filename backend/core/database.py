@@ -42,6 +42,8 @@ class Job(Base):
     hls_path = Column(String, nullable=True)
     subtitle_path = Column(String, nullable=True)
     youtube_url = Column(String, nullable=True)
+    video_stream_url = Column(String, nullable=True)
+    dubbed_audio_path = Column(String, nullable=True)
 
     duration = Column(Float, nullable=True)
     segments_json = Column(Text, nullable=True)
