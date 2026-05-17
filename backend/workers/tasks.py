@@ -215,7 +215,7 @@ async def _run_pipeline(job_id: str):
             db,
             job_id,
             dubbed_audio_path=str(
-                mp3_path
+                dubbed_audio_path
             ),
             subtitle_path=str(vtt_path),
             status=JobStatus.COMPLETED,

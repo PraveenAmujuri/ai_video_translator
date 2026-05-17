@@ -18,17 +18,23 @@ export default function VideoPlayer({
 
     const audio = audioRef.current;
 
-    if (!video || !audio)
+    if (
+      !video ||
+      !audio ||
+      !videoUrl ||
+      !dubbedAudioUrl
+    ) {
       return;
+    }
 
-    const sync = () => {
+    const syncAudio = () => {
 
       const drift = Math.abs(
         video.currentTime -
         audio.currentTime
       );
 
-      if (drift > 0.4) {
+      if (drift > 0.3) {
 
         audio.currentTime =
           video.currentTime;
@@ -37,75 +43,137 @@ export default function VideoPlayer({
 
     };
 
-    video.addEventListener(
-      "timeupdate",
-      sync,
-    );
-
-video.onplay = async () => {
+ const handlePlay = async () => {
 
   try {
 
-    await audio.play();
+    audio.muted = false;
+
+    audio.volume = 1;
+
+if (audio.readyState < 2) {
+
+  await new Promise((resolve) => {
+
+    audio.onloadedmetadata =
+      resolve;
+
+  });
+
+}
+
+audio.currentTime =
+  video.currentTime;
+
+const playPromise =
+  audio.play();
+
+    if (playPromise !== undefined) {
+
+      await playPromise;
+
+    }
 
   } catch (err) {
 
     console.error(
-      "Audio play blocked:",
+      "Audio sync error:",
       err,
     );
 
   }
 
 };
-
-    video.onpause = () => {
+    const handlePause = () => {
       audio.pause();
     };
 
-    video.onseeking = () => {
+    const handleSeeking = () => {
 
       audio.currentTime =
         video.currentTime;
 
     };
 
+    video.addEventListener(
+      "timeupdate",
+      syncAudio,
+    );
+
+    video.addEventListener(
+      "play",
+      handlePlay,
+    );
+
+    video.addEventListener(
+      "pause",
+      handlePause,
+    );
+
+    video.addEventListener(
+      "seeking",
+      handleSeeking,
+    );
+
     return () => {
 
       video.removeEventListener(
         "timeupdate",
-        sync,
+        syncAudio,
+      );
+
+      video.removeEventListener(
+        "play",
+        handlePlay,
+      );
+
+      video.removeEventListener(
+        "pause",
+        handlePause,
+      );
+
+      video.removeEventListener(
+        "seeking",
+        handleSeeking,
       );
 
     };
 
-  }, []);
+  }, [videoUrl, dubbedAudioUrl]);
 
   return (
 
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
 
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        controls
-        muted
-        className="w-full rounded-xl"
-      />
-
       {
-        dubbedAudioUrl && (
+        videoUrl && (
 
-          <audio
-            ref={audioRef}
+          <video
+            ref={videoRef}
+            src={videoUrl}
             controls
-            src={`http://127.0.0.1:8000${dubbedAudioUrl}`}
+            
+            className="w-full rounded-xl"
           />
 
         )
       }
 
+<audio
+  ref={audioRef}
+  preload="auto"
+  style={{
+    display: "none",
+  }}
+  src={
+    dubbedAudioUrl
+      ? `http://127.0.0.1:8000${dubbedAudioUrl}`
+      : undefined
+  }
+/>
+
     </div>
 
   );
+
 }
