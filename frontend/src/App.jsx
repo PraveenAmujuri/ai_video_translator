@@ -5,6 +5,7 @@ import VideoPlayer from "./components/VideoPlayer";
 import ProgressTracker from "./components/ProgressTracker";
 import LanguageSelector from "./components/LanguageSelector";
 import VoiceSelector from "./components/VoiceSelector";
+import HeroSection from "./components/HeroSection";
 
 export default function App() {
 
@@ -26,58 +27,60 @@ export default function App() {
 
   return (
 
-    <div className="min-h-screen bg-slate-950 text-white p-6">
+  <div className="bg-[#050505] text-white">
 
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-black text-white">
 
-        <h1 className="text-4xl font-bold mb-8">
-          AI Video Translator
-        </h1>
+      <HeroSection />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    </div>
 
-          <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-6 py-24">
 
-<UploadPanel
-  setJobId={setJobId}
-  setStatus={setStatus}
-  language={language}
-  voice={voice}
-/>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            <LanguageSelector
-              language={language}
-              setLanguage={setLanguage}
-            />
+        <div className="space-y-6">
 
-            <VoiceSelector
-              voice={voice}
-              setVoice={setVoice}
-              targetLanguage={language}
-            />
+          <UploadPanel
+            setJobId={setJobId}
+            setStatus={setStatus}
+            language={language}
+            voice={voice}
+          />
 
-            <ProgressTracker
-              jobId={jobId}
-              progress={progress}
-              setProgress={setProgress}
-              setStatus={setStatus}
-              setVideoUrl={setVideoUrl}
-              setDubbedAudioUrl={setDubbedAudioUrl}
-              status={status}
-            />
+          <LanguageSelector
+            language={language}
+            setLanguage={setLanguage}
+          />
 
-          </div>
+          <VoiceSelector
+            voice={voice}
+            setVoice={setVoice}
+            targetLanguage={language}
+          />
 
-          <VideoPlayer
-            videoUrl={videoUrl}
-            dubbedAudioUrl={dubbedAudioUrl}
+          <ProgressTracker
+            jobId={jobId}
+            progress={progress}
+            setProgress={setProgress}
+            setStatus={setStatus}
+            setVideoUrl={setVideoUrl}
+            setDubbedAudioUrl={setDubbedAudioUrl}
+            status={status}
           />
 
         </div>
+
+        <VideoPlayer
+          videoUrl={videoUrl}
+          dubbedAudioUrl={dubbedAudioUrl}
+        />
 
       </div>
 
     </div>
 
-  );
+  </div>
+
+);
 }
