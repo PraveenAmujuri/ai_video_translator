@@ -1,4 +1,5 @@
 import asyncio
+import os
 import logging
 import shutil
 from pathlib import Path
@@ -13,14 +14,29 @@ logger = logging.getLogger(__name__)
 
 
 async def extract_youtube_streams(url: str):
+    # Check if the dynamic cookiefile exists in the execution root directory
+    cookie_file_path = "youtube_cookies.txt"
+    has_cookies = os.path.exists(cookie_file_path)
 
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
+        # Inject cookie file if present
+        "cookiefile": cookie_file_path if has_cookies else None,
+        # Fallback layer: Impersonate trusted clients to reduce CAPTCHA triggers
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["web_embedded", "android"],
+            }
+        },
     }
 
-    with YoutubeDL(ydl_opts) as ydl:
+    if has_cookies:
+        logger.info("Extracting streams using authenticated cookie session.")
+    else:
+        logger.warning("Extracting streams without cookies. May trigger bot-detection walls.")
 
+    with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(
             url,
             download=False,
@@ -32,7 +48,6 @@ async def extract_youtube_streams(url: str):
     formats = info.get("formats", [])
 
     for f in formats:
-
         vcodec = f.get("vcodec")
         acodec = f.get("acodec")
 
@@ -41,7 +56,6 @@ async def extract_youtube_streams(url: str):
             and acodec == "none"
             and not video_url
         ):
-
             video_url = f.get("url")
 
         if (
@@ -49,7 +63,6 @@ async def extract_youtube_streams(url: str):
             and vcodec == "none"
             and not audio_url
         ):
-
             audio_url = f.get("url")
 
     return {
@@ -64,9 +77,7 @@ async def download_audio_only(
     url: str,
     job_id: str,
 ) -> Path:
-
     output_dir = settings.UPLOAD_DIR / job_id
-
     output_dir.mkdir(
         parents=True,
         exist_ok=True,
@@ -94,7 +105,6 @@ async def download_audio_only(
     )
 
     if returncode != 0:
-
         raise RuntimeError(
             f"Audio download failed: {stderr}"
         )
@@ -103,7 +113,6 @@ async def download_audio_only(
 
 
 async def get_media_duration(file_path: Path) -> float:
-
     cmd = [
         "ffprobe",
         "-v",
@@ -117,13 +126,9 @@ async def get_media_duration(file_path: Path) -> float:
     returncode, stdout, stderr = await run_subprocess(cmd)
 
     if returncode == 0:
-
         import json
-
         try:
-
             data = json.loads(stdout)
-
             return float(
                 data.get(
                     "format",
@@ -133,7 +138,6 @@ async def get_media_duration(file_path: Path) -> float:
                     0,
                 )
             )
-
         except Exception:
             pass
 
@@ -141,11 +145,8 @@ async def get_media_duration(file_path: Path) -> float:
 
 
 def cleanup_job_files(job_id: str):
-
     upload_dir = settings.UPLOAD_DIR / job_id
-
     if upload_dir.exists():
-
         shutil.rmtree(
             upload_dir,
             ignore_errors=True,
