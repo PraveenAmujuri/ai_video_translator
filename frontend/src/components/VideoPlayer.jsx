@@ -2,12 +2,11 @@ import {
   useEffect,
   useRef,
 } from "react";
-
+import ShineBorder from "./ui/ShineBorder";
 export default function VideoPlayer({
   videoUrl,
   dubbedAudioUrl,
 }) {
-
   const videoRef = useRef(null);
 
   const audioRef = useRef(null);
@@ -142,38 +141,40 @@ const playPromise =
   }, [videoUrl, dubbedAudioUrl]);
 
   return (
+  <ShineBorder
+    borderRadius={24}
+    borderWidth={2}
+    duration={10}
+    color={[
+      "#3b82f6",
+      "#8b5cf6",
+      "#ec4899",
+    ]}
+    className="w-full"
+  >
+    <div className="p-4 bg-slate-900 rounded-2xl">
 
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+      {videoUrl && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          controls
+          className="w-full rounded-xl"
+        />
+      )}
 
-      {
-        videoUrl && (
-
-          <video
-            ref={videoRef}
-            src={videoUrl}
-            controls
-            
-            className="w-full rounded-xl"
-          />
-
-        )
-      }
-
-<audio
-  ref={audioRef}
-  preload="auto"
-  style={{
-    display: "none",
-  }}
-  src={
-    dubbedAudioUrl
-      ? `http://127.0.0.1:8000${dubbedAudioUrl}`
-      : undefined
-  }
-/>
+      <audio
+        ref={audioRef}
+        preload="auto"
+        style={{ display: "none" }}
+        src={
+          dubbedAudioUrl
+            ? `http://127.0.0.1:8000${dubbedAudioUrl}`
+            : undefined
+        }
+      />
 
     </div>
-
-  );
-
+  </ShineBorder>
+);
 }

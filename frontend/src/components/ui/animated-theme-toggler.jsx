@@ -118,21 +118,25 @@ export const AnimatedThemeToggler = ({
   ...props
 }) => {
   const shape = variant ?? "circle"
-  const [isDark, setIsDark] = useState(false)
+  const [isDark, setIsDark] = useState(
+  () => document.documentElement.classList.contains("dark")
+)
   const buttonRef = useRef(null)
 
-  useEffect(() => {
-    const updateTheme = () => {
-      setIsDark(document.documentElement.classList.contains("dark"))
-    }
-    updateTheme()
-    const observer = new MutationObserver(updateTheme)
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    })
-    return () => observer.disconnect()
-  }, [])
+useEffect(() => {
+  const observer = new MutationObserver(() => {
+    setIsDark(
+      document.documentElement.classList.contains("dark")
+    )
+  })
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class"],
+  })
+
+  return () => observer.disconnect()
+}, [])
 
   const toggleTheme = useCallback(() => {
     const button = buttonRef.current
@@ -155,6 +159,10 @@ export const AnimatedThemeToggler = ({
     )
     const applyTheme = () => {
       const newTheme = !isDark
+document.documentElement.style.setProperty(
+  "--theme-transition-bg",
+  newTheme ? "#000000" : "#ffffff"
+)
       setIsDark(newTheme)
       document.documentElement.classList.toggle("dark")
       localStorage.setItem("theme", newTheme ? "dark" : "light")
@@ -194,27 +202,36 @@ export const AnimatedThemeToggler = ({
     const ready = transition?.ready
     if (ready && typeof ready.then === "function") {
       ready.then(() => {
-        document.documentElement.animate(
-          {
-            clipPath,
-          },
-          {
-            duration,
-            easing: shape === "star" ? "linear" : "ease-in-out",
-            fill: "forwards",
-            pseudoElement: "::view-transition-new(root)",
-          }
-        )
+
+document.documentElement.animate(
+  {
+    clipPath,
+    opacity: [0.85, 1],
+  },
+  {
+    duration,
+    easing: shape === "star" ? "linear" : "ease-in-out",
+    fill: "forwards",
+    pseudoElement: "::view-transition-new(root)",
+  }
+)
+
       })
     }
   }, [shape, fromCenter, duration, isDark])
 
   return (
-    <button
-      type="button"
-      ref={buttonRef}
-      onClick={toggleTheme}
-      className={cn(className)}
+<button
+  type="button"
+  ref={buttonRef}
+  onClick={toggleTheme}
+  style={{
+    color: isDark ? "#ffffff" : "#000000"
+  }}
+className={cn(
+  "transition-colors duration-300",
+  className
+)}
       {...props}
     >
       {isDark ? <Sun /> : <Moon />}

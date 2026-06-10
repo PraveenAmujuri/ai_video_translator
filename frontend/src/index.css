@@ -6,3 +6,12 @@ body {
   color: white;
   font-family: Inter, sans-serif;
 }
+@keyframes shine {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

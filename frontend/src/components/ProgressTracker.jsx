@@ -146,18 +146,72 @@ export default function ProgressTracker({
 
   };
 
-  return (
+return (
 
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <div className="w-full py-8">
 
-      <h2 className="text-xl font-semibold mb-5">
-        Progress Tracker
-      </h2>
+    {/* STATUS */}
+    <div className="flex items-center gap-3">
 
-      <div className="w-full bg-slate-800 rounded-full h-4 overflow-hidden">
+      <div
+        className={`
+          w-3
+          h-3
+          rounded-full
+          animate-pulse
+
+          ${
+            status === "completed"
+              ? "bg-green-400"
+              : status === "failed"
+              ? "bg-red-400"
+              : "bg-blue-400"
+          }
+        `}
+      />
+
+      <p
+        className={`
+          text-lg
+          font-medium
+
+          ${getStatusColor()}
+        `}
+      >
+        {message || status}
+      </p>
+
+    </div>
+
+    {/* PROGRESS */}
+    <div className="mt-8">
+
+      <div className="flex justify-between items-center mb-3">
+
+        <span className="text-white/50 text-sm">
+          Translation Progress
+        </span>
+
+        <span className="text-white font-semibold">
+          {progress}%
+        </span>
+
+      </div>
+
+      <div className="relative h-[3px] w-full bg-white/10 overflow-hidden">
 
         <div
-          className="bg-green-500 h-full transition-all duration-500"
+          className="
+            absolute
+            left-0
+            top-0
+            h-full
+
+            bg-white
+
+            transition-all
+            duration-700
+          "
           style={{
             width: `${progress}%`,
           }}
@@ -165,34 +219,113 @@ export default function ProgressTracker({
 
       </div>
 
-      <div className="mt-4 space-y-2">
+    </div>
 
-        <p className="text-lg font-medium">
-          {progress}%
-        </p>
+    {/* PIPELINE */}
+    <div className="mt-10 flex flex-wrap gap-4">
 
-        <p
-          className={`font-semibold ${getStatusColor()}`}
-        >
-          Status: {status}
-        </p>
+      <div
+        className={`
+          text-sm
 
-        <p className="text-slate-400 text-sm">
-          {message}
-        </p>
+          ${
+            progress >= 20
+              ? "text-white"
+              : "text-white/25"
+          }
+        `}
+      >
+        Extract
+      </div>
 
-        {
-          error && (
-            <div className="bg-red-950 border border-red-800 rounded-lg p-3 text-red-300 text-sm">
-              {error}
-            </div>
-          )
-        }
+      <div className="text-white/20">
+        →
+      </div>
 
+      <div
+        className={`
+          text-sm
+
+          ${
+            progress >= 35
+              ? "text-white"
+              : "text-white/25"
+          }
+        `}
+      >
+        Transcribe
+      </div>
+
+      <div className="text-white/20">
+        →
+      </div>
+
+      <div
+        className={`
+          text-sm
+
+          ${
+            progress >= 55
+              ? "text-white"
+              : "text-white/25"
+          }
+        `}
+      >
+        Translate
+      </div>
+
+      <div className="text-white/20">
+        →
+      </div>
+
+      <div
+        className={`
+          text-sm
+
+          ${
+            progress >= 75
+              ? "text-white"
+              : "text-white/25"
+          }
+        `}
+      >
+        Voice
+      </div>
+
+      <div className="text-white/20">
+        →
+      </div>
+
+      <div
+        className={`
+          text-sm
+
+          ${
+            progress >= 100
+              ? "text-white"
+              : "text-white/25"
+          }
+        `}
+      >
+        Complete
       </div>
 
     </div>
 
-  );
+    {/* ERROR */}
+    {
+      error && (
 
+        <div className="mt-8 text-red-400 text-sm">
+
+          {error}
+
+        </div>
+
+      )
+    }
+
+  </div>
+
+);
 }

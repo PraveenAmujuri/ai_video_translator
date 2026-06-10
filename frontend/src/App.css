@@ -182,13 +182,56 @@
     border-right-color: var(--border);
   }
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
 
 /* Scoped to AnimatedThemeToggler — the toggler sets the data-attribute and the variable only during a theme toggle. */
 html[data-magicui-theme-vt="active"]::view-transition-group(root) {
   animation-duration: var(--magicui-theme-toggle-vt-duration);
 }
+
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+html.dark::view-transition-new(root) {
+  background-color: black;
+}
+
+html:not(.dark)::view-transition-new(root) {
+  background-color: white;
+}
+:root {
+  --folder-color: #000000;
+}
+
+html.dark {
+  --folder-color: #ffffff;
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes borderRotate {
+  0% {
+    --border-angle: 0deg;
+  }
+  100% {
+    --border-angle: 360deg;
+  }
+}
+
+/* Premium dynamic RGB ribbon wireframe wrapper */
+.premium-rgb-pipeline {
+  border: 1px solid transparent;
+  background: 
+    linear-gradient(#000000, #000000) padding-box, /* Inward solid surface canvas mask */
+    conic-gradient(from var(--border-angle), #3b82f6, #8b5cf6, #ec4899, #10b981, #3b82f6) border-box; /* 360 dynamic gradient strip */
+}
+
+/* Loop timing mechanism */
+.animate-rgb-stream {
+  animation: borderRotate 6s linear infinite;
+}
+

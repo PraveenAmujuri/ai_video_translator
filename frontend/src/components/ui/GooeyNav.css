@@ -1,34 +1,28 @@
+/*
+  THEME VARIABLES
+  ─────────────────────────────────────────
+  Light mode  →  black pill,  white active text,  black idle text
+  Dark mode   →  white pill,  black active text,  white idle text
+*/
 :root {
-  --linear-ease: linear(
-    0,
-    0.068,
-    0.19 2.7%,
-    0.804 8.1%,
-    1.037,
-    1.199 13.2%,
-    1.245,
-    1.27 15.8%,
-    1.274,
-    1.272 17.4%,
-    1.249 19.1%,
-    0.996 28%,
-    0.949,
-    0.928 33.3%,
-    0.926,
-    0.933 36.8%,
-    1.001 45.6%,
-    1.013,
-    1.019 50.8%,
-    1.018 54.4%,
-    1 63.1%,
-    0.995 68%,
-    1.001 85%,
-    1
-  );
+  --nav-bg: black;       /* pill fill */
+  --nav-text: white;     /* text ON the active pill */
+  --nav-idle: black;     /* idle nav item text */
+  --particle-color: black;
 }
 
+html.dark {
+  --nav-bg: white;
+  --nav-text: black;
+  --nav-idle: white;
+  --particle-color: white;
+}
+
+/* ── Container ─────────────────────────────────────────────── */
 .gooey-nav-container {
   position: relative;
+  isolation: isolate;
+  z-index: 9999;
 }
 
 .gooey-nav-container nav {
@@ -37,6 +31,7 @@
   transform: translate3d(0, 0, 0.01px);
 }
 
+/* ── List ───────────────────────────────────────────────────── */
 .gooey-nav-container nav ul {
   display: flex;
   gap: 2em;
@@ -45,46 +40,42 @@
   margin: 0;
   position: relative;
   z-index: 3;
-  color: white;
-  text-shadow: 0 1px 1px hsl(205deg 30% 10% / 0.2);
+  color: var(--nav-idle);
 }
 
+/* ── Item ───────────────────────────────────────────────────── */
 .gooey-nav-container nav ul li {
   border-radius: 100vw;
   position: relative;
   cursor: pointer;
+  color: var(--nav-idle);
   transition:
     background-color 0.3s ease,
     color 0.3s ease,
     box-shadow 0.3s ease;
   box-shadow: 0 0 0.5px 1.5px transparent;
-  color: white;
-}
-
-.gooey-nav-container nav ul li a {
-  display: inline-block;
-  padding: 0.6em 1em;
 }
 
 .gooey-nav-container nav ul li:focus-within:has(:focus-visible) {
-  box-shadow: 0 0 0.5px 1.5px white;
+  box-shadow: 0 0 0.5px 1.5px var(--nav-bg);
 }
 
+/* Background pill that expands on active */
 .gooey-nav-container nav ul li::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 10px;
-  background: white;
+  background: var(--nav-bg);
   opacity: 0;
   transform: scale(0);
   transition: all 0.3s ease;
   z-index: -1;
 }
 
+/* Active state — text switches to nav-text (inverted from idle) */
 .gooey-nav-container nav ul li.active {
-  color: black;
-  text-shadow: none;
+  color: var(--nav-text);
 }
 
 .gooey-nav-container nav ul li.active::after {
@@ -92,6 +83,15 @@
   transform: scale(1);
 }
 
+/* Anchor inherits from parent li */
+.gooey-nav-container nav ul li a {
+  display: inline-block;
+  padding: 0.6em 1em;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Effect layers ──────────────────────────────────────────── */
 .gooey-nav-container .effect {
   position: absolute;
   left: 0;
@@ -103,48 +103,42 @@
   display: grid;
   place-items: center;
   z-index: 1;
-  /* Ensure parent bounding container doesn't choke flying items */
-  overflow: visible !important; 
+  overflow: visible !important;
 }
 
+/* Text overlay — mirrors the active item label */
 .gooey-nav-container .effect.text {
-  color: white;
+  color: var(--nav-idle);
   transition: color 0.3s ease;
 }
 
 .gooey-nav-container .effect.text.active {
-  color: black;
+  color: var(--nav-text);
 }
 
-.gooey-nav-container .effect.filter {
-  filter: blur(7px) contrast(100) blur(0);
-  mix-blend-mode: lighten;
-}
-
-/* CHANGE THIS: Remove the solid asset blocking element */
-/* Completely clean up the old CSS filter and drop the black background layer */
+/* Gooey SVG filter layer */
 .gooey-nav-container .effect.filter {
   filter: url('#clean-gooey-effect');
   mix-blend-mode: normal;
   background: transparent;
   overflow: visible !important;
 }
-/* Delete the entire pseudo-element block that caused the black box */
+
 .gooey-nav-container .effect.filter::before {
   display: none;
 }
 
-/* Ensure the background pill shape rendering inside the container stays perfectly white */
 .gooey-nav-container .effect.filter::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: white;
+  background: var(--nav-bg);
   transform: scale(0);
   opacity: 0;
   z-index: -1;
   border-radius: 100vw;
 }
+
 .gooey-nav-container .effect.active::after {
   animation: pill 0.3s ease both;
 }
@@ -154,6 +148,16 @@
     transform: scale(1);
     opacity: 1;
   }
+}
+
+/* ── Particle system ────────────────────────────────────────── */
+:root {
+  --linear-ease: linear(
+    0, 0.068, 0.19 2.7%, 0.804 8.1%, 1.037, 1.199 13.2%, 1.245, 1.27 15.8%,
+    1.274, 1.272 17.4%, 1.249 19.1%, 0.996 28%, 0.949, 0.928 33.3%, 0.926,
+    0.933 36.8%, 1.001 45.6%, 1.013, 1.019 50.8%, 1.018 54.4%, 1 63.1%,
+    0.995 68%, 1.001 85%, 1
+  );
 }
 
 .particle,
@@ -186,18 +190,15 @@
     opacity: 1;
     animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
-
   70% {
     transform: rotate(calc(var(--rotate) * 0.5)) translate(calc(var(--end-x) * 1.2), calc(var(--end-y) * 1.2));
     opacity: 1;
     animation-timing-function: ease;
   }
-
   85% {
     transform: rotate(calc(var(--rotate) * 0.66)) translate(calc(var(--end-x)), calc(var(--end-y)));
     opacity: 1;
   }
-
   100% {
     transform: rotate(calc(var(--rotate) * 1.2)) translate(calc(var(--end-x) * 0.5), calc(var(--end-y) * 0.5));
     opacity: 1;
@@ -210,41 +211,13 @@
     opacity: 0;
     animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
-
-  25% {
-    transform: scale(calc(var(--scale) * 0.25));
-  }
-
-  38% {
-    opacity: 1;
-  }
-
+  25% { transform: scale(calc(var(--scale) * 0.25)); }
+  38% { opacity: 1; }
   65% {
     transform: scale(var(--scale));
     opacity: 1;
     animation-timing-function: ease;
   }
-
-  85% {
-    transform: scale(var(--scale));
-    opacity: 1;
-  }
-
-  100% {
-    transform: scale(0);
-    opacity: 0;
-  }
-}
-.gooey-nav-container {
-  position: relative;
-  isolation: isolate;
-  z-index: 9999;
-
-  isolation: isolate;
-}
-.gooey-nav-container {
-  position: relative;
-  isolation: isolate;
-
-
+  85% { transform: scale(var(--scale)); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
