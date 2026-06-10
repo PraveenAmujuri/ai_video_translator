@@ -23,10 +23,11 @@ async def extract_youtube_streams(url: str):
         "no_warnings": True,
         # Inject cookie file if present
         "cookiefile": cookie_file_path if has_cookies else None,
-        # Fallback layer: Impersonate trusted clients to reduce CAPTCHA triggers
+        # Switch to highly stable clients against data-center signature blocks
         "extractor_args": {
             "youtube": {
-                "player_client": ["web_embedded", "android"],
+                "player_client": ["tv", "ios"],
+                "skip": ["webpage", "authcheck"]
             }
         },
     }
@@ -37,9 +38,11 @@ async def extract_youtube_streams(url: str):
         logger.warning("Extracting streams without cookies. May trigger bot-detection walls.")
 
     with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(
-            url,
-            download=False,
+        # Run in a separate thread pool if extract_info blocks your async loop
+        loop = asyncio.get_running_loop()
+        info = await loop.run_in_executor(
+            None, 
+            lambda: ydl.extract_info(url, download=False)
         )
 
     video_url = None
@@ -71,7 +74,6 @@ async def extract_youtube_streams(url: str):
         "audio_url": audio_url,
         "duration": info.get("duration"),
     }
-
 
 async def download_audio_only(
     url: str,
