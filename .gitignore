@@ -56,7 +56,6 @@ tmp/
 *.m3u8
 
 # Whisper / AI Cache
-models/
 *.pt
 *.bin
 
