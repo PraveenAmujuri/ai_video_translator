@@ -169,7 +169,7 @@ const playPromise =
         style={{ display: "none" }}
         src={
           dubbedAudioUrl
-            ? `http://127.0.0.1:8000${dubbedAudioUrl}`
+            ? `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"}${dubbedAudioUrl}`
             : undefined
         }
       />
