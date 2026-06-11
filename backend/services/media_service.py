@@ -22,9 +22,11 @@ async def extract_youtube_streams(url: str):
     url = url.strip()
 
     # --- CLIENT-SIDE PASSTHROUGH INTERCEPTOR GATE ---
-    # If the incoming string is already a direct googlevideo stream endpoint URL token,
-    # completely bypass yt-dlp to protect the server IP from being flagged!
-    if "googlevideo.com" in url or url.startswith("http") and not ("youtube.com/watch" in url or "youtu.be/" in url):
+    # Enhanced check: matches direct stream URLs while explicitly ignoring raw web pages
+    is_direct_stream = "googlevideo.com" in url or "manifest" in url or url.startswith("http")
+    is_raw_page = "youtube.com/watch" in url or "youtu.be/" in url
+
+    if is_direct_stream and not is_raw_page:
         logger.info("Direct browser-extracted stream asset target detected. Bypassing cloud extraction barriers cleanly.")
         return {
             "title": "Client Authenticated Source Stream",
