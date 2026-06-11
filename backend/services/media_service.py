@@ -17,46 +17,44 @@ logger = logging.getLogger(__name__)
 async def extract_youtube_streams(url: str):
     """
     Extracts stable streaming audio and video links natively via yt-dlp.
-    Dynamically generates a temporary Netscape cookiefile from environment variables 
-    to bypass cloud data-center blockages with zero external repository file dependencies.
+    Includes a direct passthrough interceptor map for client-extracted browser tracks.
     """
     url = url.strip()
-    cookie_file_path = "/tmp/youtube_cookies.txt"
-    
-    # Check if the environment variable string exists and dynamically write the file in storage
-    cookie_content = os.getenv("YT_COOKIES")
-    if cookie_content:
-        logger.info("Railway environment cookie context detected. Generating temporary tracking block...")
-        try:
-            Path(cookie_file_path).parent.mkdir(parents=True, exist_ok=True)
-            Path(cookie_file_path).write_text(cookie_content.strip())
-        except Exception as e:
-            logger.error(f"Failed to compile dynamic cookie file matrix: {str(e)}")
 
-    has_cookies = os.path.exists(cookie_file_path)
+    # --- CLIENT-SIDE PASSTHROUGH INTERCEPTOR GATE ---
+    # If the incoming string is already a direct googlevideo stream endpoint URL token,
+    # completely bypass yt-dlp to protect the server IP from being flagged!
+    if "googlevideo.com" in url or url.startswith("http") and not ("youtube.com/watch" in url or "youtu.be/" in url):
+        logger.info("Direct browser-extracted stream asset target detected. Bypassing cloud extraction barriers cleanly.")
+        return {
+            "title": "Client Authenticated Source Stream",
+            "video_url": url,
+            "audio_url": url,
+            "duration": 0.0  # Recalculated dynamically downstream by your native ffprobe analyzer!
+        }
 
-    # --- PRODUCTION CONFIGURATION MATCHING DESKTOP BROWSER VISUAL OVERRIDES ---
+    logger.info(f"Fallback layer activated: Extracting streams via standard desktop browser client spoof for: {url}")
+
+    # Core fallback system options tuned to prevent datacenter formatting blocks
     ydl_opts = {
         "quiet": True,
         "no_warnings": True,
         "source_address": "0.0.0.0",
         "nocheckcertificate": True,
-        "cookiefile": cookie_file_path if has_cookies else None,
         
-        # We tell yt-dlp to act as a standard browser client to match your active cookie session mapping.
-        # This resolves the "No video formats found!" constraint block error completely.
+        # We instruct the engine to masquerade fully as a desktop web browser client interface
         "extractor_args": {
             "youtube": {
                 "client": "web",
                 "skip": ["webpage", "hls"]
             }
         },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
     }
-
-    if has_cookies:
-        logger.info("Extracting streams using authenticated dynamic cookie session.")
-    else:
-        logger.warning("Extracting streams without cookies. May trigger bot-detection walls.")
 
     try:
         loop = asyncio.get_event_loop()
@@ -112,7 +110,7 @@ async def extract_youtube_streams(url: str):
         logger.error(f"Native stream extraction pipeline crash: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="Streaming extraction error. Verify your live YT_COOKIES dashboard values."
+            detail="Streaming extraction error. Shifting pipeline context."
         )
 
 

@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "EchoX Stream Helper",
+  "version": "1.0.0",
+  "description": "Bypasses browser CORS gates to extract direct unthrottled streaming paths natively on the client.",
+  "permissions": [
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "https://*.youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost:5173/*",
+        "https://*.vercel.app/*",
+        "https://*.praveenai.tech/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}

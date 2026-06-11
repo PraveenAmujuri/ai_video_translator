@@ -106,25 +106,94 @@ export default function UploadPanel({
     }
   }
 
+  // Unified absolute server fallback wrapper
+  async function runServerFallback() {
+    try {
+      console.log("Engaging server-side backup tracker processing framework...");
+      const res = await api.post("/translate", {
+        youtube_url: youtubeUrl.trim(),
+        target_language: language,
+        source_language: "auto",
+        voice: voice,
+      });
+      setJobId(res.data.job_id);
+    } catch (fallbackErr) {
+      console.error("Server processing exception:", fallbackErr);
+      alert("Failed to process YouTube stream pipeline.");
+      setStatus("idle");
+    }
+  }
+
   async function handleYoutubeSubmit() {
-    // Safety check: block execution if field is disabled or empty
     if (!youtubeUrl || isDisabled) return;
 
     try {
       setStatus("processing");
 
-      const res = await api.post("/translate", {
-        youtube_url: youtubeUrl,
-        target_language: language,
-        source_language: "auto",
-        voice: voice,
-      });
+      // Isolate the unique 11-character YouTube Video ID cleanly
+      const match = youtubeUrl.match(/(?:v=|\/|embed\/|youtu\.be\/)([0-9A-Za-z_-]{11})/);
+      if (!match) {
+        alert("Invalid YouTube URL structure.");
+        setStatus("idle");
+        return;
+      }
+      const videoId = match[1];
 
-      setJobId(res.data.job_id);
+      // Set up a clean listener event receiver to catch the EchoX extension reply packet 
+      const handleExtensionResponse = async (event) => {
+        if (event.source !== window) return;
+
+        if (event.data.type === "YOUTUBE_EXTRACT_SUCCESS") {
+          window.removeEventListener("message", handleExtensionResponse);
+          
+          // Secure stream link payload validation
+          const finalUrlPayload = event.data.url || youtubeUrl.trim();
+          console.log("EchoX Helper successfully extracted direct stream asset path. Dispatched to Railway.");
+
+          try {
+            const res = await api.post("/translate", {
+              youtube_url: finalUrlPayload,
+              target_language: language,
+              source_language: "auto",
+              voice: voice,
+            });
+            setJobId(res.data.job_id);
+          } catch (apiErr) {
+            console.error("API submission failed, retrying via server pipeline fallback...", apiErr);
+            runServerFallback();
+          }
+        }
+
+        if (event.data.type === "YOUTUBE_EXTRACT_FAILED") {
+          window.removeEventListener("message", handleExtensionResponse);
+          console.warn("EchoX Extension parser hit a brick wall. Running fallback configuration.");
+          runServerFallback();
+        }
+      };
+
+      // Register window runtime communications gate
+      window.addEventListener("message", handleExtensionResponse);
+
+      // Dispatch tracking message straight to EchoX Stream Helper
+      window.postMessage({ type: "EXTRACT_YOUTUBE", videoId }, "*");
+
+      // Extension Check Timeout: If extension is missing, fall back to server automatically in 4 seconds
+      setTimeout(() => {
+        window.removeEventListener("message", handleExtensionResponse);
+        // Only run if the listener didn't clear status due to an earlier completion event
+        if (status === "idle" || status === "uploaded" || status === "uploading") return;
+        
+        // Check if tracking state is still blocked on extraction phase processing
+        const currentCheckState = document.querySelector('input[placeholder*="remote stream"]');
+        if (currentCheckState) {
+          console.log("EchoX Extension handshake timeout. Engaging backend server fallback engine...");
+          runServerFallback();
+        }
+      }, 4000);
+
     } catch (err) {
-      console.error(err);
-      alert("Failed to process YouTube URL");
-      setStatus("idle");
+      console.error("Initial pipeline handshake failure:", err);
+      runServerFallback();
     }
   }
 
@@ -271,7 +340,7 @@ export default function UploadPanel({
             }
           `}
         >
-          {/* Subtle Premium Overlay Light Track (Only visible when processing) */}
+          {/* Subtle Premium Overlay Light Track */}
           {isUrlProcessing && (
             <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-r from-transparent via-zinc-400/5 dark:via-zinc-100/5 to-transparent animate-[premiumShimmer_3s_infinite_linear]" style={{ backgroundSize: '200% 100%' }} />
           )}
@@ -301,40 +370,20 @@ export default function UploadPanel({
           />
 
           {/* Action Button */}
-         <ShinyButton
-  onClick={handleYoutubeSubmit}
-  disabled={
-    isDisabled ||
-    !youtubeUrl.trim()
-  }
-  className="shrink-0 z-20"
->
-
-  {isUrlProcessing ? (
-
-    <>
-
-      <Loader2 className="
-        w-3.5
-        h-3.5
-        animate-spin
-      " />
-
-      <span>
-        Processing
-      </span>
-
-    </>
-
-  ) : (
-
-    <span>
-      Process URL
-    </span>
-
-  )}
-
-</ShinyButton>
+          <ShinyButton
+            onClick={handleYoutubeSubmit}
+            disabled={isDisabled || !youtubeUrl.trim()}
+            className="shrink-0 z-20"
+          >
+            {isUrlProcessing ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Processing</span>
+              </>
+            ) : (
+              <span>Process URL</span>
+            )}
+          </ShinyButton>
 
         </div>
       </div>
