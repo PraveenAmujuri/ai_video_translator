@@ -146,13 +146,14 @@ export default function UploadPanel({
         if (event.data.type === "YOUTUBE_EXTRACT_SUCCESS") {
           window.removeEventListener("message", handleExtensionResponse);
           
-          // Secure stream link payload validation
-          const finalUrlPayload = event.data.url || youtubeUrl.trim();
+          const extractedStreamUrl = event.data.url;
           console.log("EchoX Helper successfully extracted direct stream asset path. Dispatched to Railway.");
 
           try {
+            // FIXED HANDSHAKE MAP: Sends the distinct client-side stream URL token to pop the backend column parameter fields properly
             const res = await api.post("/translate", {
-              youtube_url: finalUrlPayload,
+              youtube_url: youtubeUrl.trim(),
+              video_stream_url: extractedStreamUrl,
               target_language: language,
               source_language: "auto",
               voice: voice,
