@@ -2,11 +2,10 @@ import asyncio
 import os
 import logging
 import shutil
-import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-import yt_dlp
+from yt_dlp import YoutubeDL
 from fastapi import HTTPException
 
 from core.config import settings
@@ -14,135 +13,179 @@ from core.utils import run_subprocess
 
 logger = logging.getLogger(__name__)
 
-# System fallback token path directory hook configuration matching Linux deployment specifications
-OAUTH_CACHE_DIR = "/tmp/yt_dlp_oauth_cache"
-
-
-def trigger_railway_oauth_handshake():
-    """
-    Forces yt-dlp to run an authentication handshake loop.
-    Intercepts and outputs the google.com/device token verification strings directly 
-    into the active Railway live logs console window.
-    """
-    logger.info("Initializing explicit YouTube OAuth2 handshake protocol on Railway...")
-    
-    ydl_opts = {
-        'simulate': True,
-        'quiet': False,  # MUST be False so the login instructions stream into Railway logs
-        'cache_dir': OAUTH_CACHE_DIR,
-        'extractor_args': {
-            'youtube': {
-                'client': 'tv',
-                'username': 'oauth2'
-            }
-        }
-    }
-
-    # Custom log wrapper class to force stdout streams straight into Railway logging hooks
-    class RailwayLogInterceptor:
-        def write(self, message):
-            if "google.com/device" in message or "enter code" in message:
-                print(f"\n\n🚨 [YOUTUBE AUTH REQUIRED] 🚨\n{message.strip()}\n🚨 [ACTION REQUIRED] 🚨\n", flush=True)
-            else:
-                sys.__stdout__.write(message)
-        def flush(self):
-            sys.__stdout__.flush()
-
-    # Intercept system out blocks temporarily during boot to catch the authorization string
-    original_stdout = sys.stdout
-    sys.stdout = RailwayLogInterceptor()
-
-    try:
-        # Request metadata on a safe universal mock target link to force the pairing sequence
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.extract_info('https://www.youtube.com/watch?v=jNQXAC9IVRw', download=False)
-    except Exception as e:
-        # If it returns a login success error or breaks mid-flight naturally, handle it gracefully
-        if "Pre-authentication" in str(e) or "authenticated" in str(e).lower():
-            logger.info("OAuth2 device handshake profile state verified successfully.")
-        else:
-            logger.warning(f"OAuth2 baseline setup context notification: {str(e)}")
-    finally:
-        sys.stdout = original_stdout
-
 
 async def extract_youtube_streams(url: str):
     """
-    Extracts stable media streaming target paths utilizing the authenticated global token pool container.
+    Extracts stable streaming audio and video links natively via yt-dlp.
+    Dynamically generates a temporary Netscape cookiefile from environment variables 
+    to bypass cloud data-center blockages with zero external repository file dependencies.
     """
     url = url.strip()
-    logger.info(f"Extracting streaming tracks natively via verified OAuth2 context for target: {url}")
+    cookie_file_path = "/tmp/youtube_cookies.txt"
+    
+    # Check if the environment variable string exists and dynamically write the file in storage
+    cookie_content = os.getenv("YT_COOKIES")
+    if cookie_content:
+        logger.info("Railway environment cookie context detected. Generating temporary tracking block...")
+        try:
+            Path(cookie_file_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(cookie_file_path).write_text(cookie_content.strip())
+        except Exception as e:
+            logger.error(f"Failed to compile dynamic cookie file matrix: {str(e)}")
+
+    has_cookies = os.path.exists(cookie_file_path)
 
     ydl_opts = {
-        'format': 'bestaudio/best',
-        'quiet': True,
-        'no_warnings': True,
-        'source_address': '0.0.0.0', 
-        'nocheckcertificate': True,
-        'cache_dir': OAUTH_CACHE_DIR,
-        'extractor_args': {
-            'youtube': {
-                'client': 'tv',
-                'username': 'oauth2'
+        "quiet": True,
+        "no_warnings": True,
+        "source_address": "0.0.0.0",
+        "nocheckcertificate": True,
+        # Inject custom dynamically compiled cookie file if present
+        "cookiefile": cookie_file_path if has_cookies else None,
+        # Fallback layer: Impersonate trusted clients to reduce CAPTCHA triggers
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["web_embedded", "android"],
             }
-        }
+        },
     }
+
+    if has_cookies:
+        logger.info("Extracting streams using authenticated dynamic cookie session.")
+    else:
+        logger.warning("Extracting streams without cookies. May trigger bot-detection walls.")
 
     try:
         loop = asyncio.get_event_loop()
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        with YoutubeDL(ydl_opts) as ydl:
             info = await loop.run_in_executor(
-                None, 
+                None,
                 lambda: ydl.extract_info(url, download=False)
             )
-            
-        if not info:
-            raise RuntimeError("Cloud validation failed to isolate streaming content maps.")
 
-        stream_url = info.get('url')
+        if not info:
+            raise RuntimeError("The extraction backend failed to resolve a stable payload track manifest.")
+
+        # Re-implementing your precise loop structure to isolate track data pointers
+        video_url = None
+        audio_url = None
+        formats = info.get("formats", [])
+
+        for f in formats:
+            vcodec = f.get("vcodec")
+            acodec = f.get("acodec")
+
+            if (
+                vcodec != "none"
+                and acodec == "none"
+                and not video_url
+            ):
+                video_url = f.get("url")
+
+            if (
+                acodec != "none"
+                and vcodec == "none"
+                and not audio_url
+            ):
+                audio_url = f.get("url")
+
+        # Fallback tracking assignment to maximize route integrity if specialized arrays are missing
+        if not audio_url:
+            audio_url = info.get("url")
+        if not video_url:
+            video_url = info.get("url")
+
+        if not audio_url:
+            raise RuntimeError("Direct media playback routing URL missing from metadata mapping.")
+
         return {
             "title": info.get("title", "Processed Production Video"),
-            "video_url": stream_url,
-            "audio_url": stream_url, 
+            "video_url": video_url,
+            "audio_url": audio_url,
             "duration": float(info.get("duration", 0.0))
         }
 
     except Exception as e:
-        logger.error(f"Cloud stream extraction exception: {str(e)}")
+        logger.error(f"Native stream extraction pipeline crash: {str(e)}")
         raise HTTPException(
-            status_code=500, 
-            detail="Streaming extraction error. Check Railway logs to verify if re-authentication is needed."
+            status_code=500,
+            detail="Streaming extraction error. Verify your live YT_COOKIES dashboard values."
         )
 
 
-async def download_audio_only(url: str, job_id: str) -> Path:
+async def download_audio_only(
+    url: str,
+    job_id: str,
+) -> Path:
     output_dir = settings.UPLOAD_DIR / job_id
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
     output_path = output_dir / "audio.wav"
 
-    cmd = ["ffmpeg", "-y", "-i", url, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", str(output_path)]
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        url,
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "16000",
+        "-ac",
+        "1",
+        str(output_path),
+    ]
+
     returncode, stdout, stderr = await run_subprocess(cmd)
 
     if returncode != 0:
-        raise RuntimeError(f"Audio download failed: {stderr}")
+        raise RuntimeError(
+            f"Audio download failed: {stderr}"
+        )
+
     return output_path
 
 
 async def get_media_duration(file_path: Path) -> float:
-    cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(file_path)]
+    cmd = [
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        str(file_path),
+    ]
+
     returncode, stdout, stderr = await run_subprocess(cmd)
 
     if returncode == 0:
         import json
         try:
             data = json.loads(stdout)
-            return float(data.get("format", {}).get("duration", 0.0))
+            return float(
+                data.get(
+                    "format",
+                    {},
+                ).get(
+                    "duration",
+                    0,
+                )
+            )
         except Exception:
             pass
+
     return 0.0
 
 
 def cleanup_job_files(job_id: str):
     upload_dir = settings.UPLOAD_DIR / job_id
     if upload_dir.exists():
-        shutil.rmtree(upload_dir, ignore_errors=True)
+        shutil.rmtree(
+            upload_dir,
+            ignore_errors=True,
+        )
