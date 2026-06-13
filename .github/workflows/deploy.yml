@@ -24,6 +24,10 @@ jobs:
               cd ai_video_translator
               git pull origin main
             fi
+
+            #clean up old images and build cache to free up space and ensure a clean slate for deployment
+            sudo docker system prune -f
+            sudo docker builder prune -f
             
             # 2. Dynamic generation of the production .env file using your GitHub Secrets
             echo "DEBUG=${{ secrets.DEBUG }}" > .env
