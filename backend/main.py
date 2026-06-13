@@ -22,27 +22,29 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
-# Modern lifespan setup for DB initialization and dynamic cookie writing
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Create cookies file from Railway variable if it exists
-    cookie_content = os.getenv("YT_COOKIES")
-    if cookie_content:
-        logging.info("YT_COOKIES environment variable found. Generating runtime cookiefile...")
-        with open("youtube_cookies.txt", "w", encoding="utf-8") as f:
-            f.write(cookie_content)
-    else:
-        logging.warning("No YT_COOKIES environment variable found. yt-dlp might fail on cloud hosting.")
-
-    # 2. Initialize the database
+    # 1. Initialize DB
     await init_db()
     
+    # 2. CRITICAL CRASH RECOVERY: Mark dead jobs from previous crashes as failed
+    try:
+        from core.database import AsyncSessionLocal
+        from sqlalchemy import text
+        
+        logging.info("Running system startup crash recovery checks...")
+        async with AsyncSessionLocal() as session:
+            # Updates stuck statuses automatically on reboot
+            await session.execute(
+                text("UPDATE jobs SET status='failed' WHERE status='processing'")
+            )
+            await session.commit()
+            logging.info("Stuck processing jobs recovered successfully.")
+    except Exception as e:
+        logging.error(f"Crash recovery failed: {str(e)}")
+        
     yield
-    
-    # 3. Clean up the cookies file on application shutdown for security
-    if os.path.exists("youtube_cookies.txt"):
-        os.remove("youtube_cookies.txt")
-        logging.info("Runtime cookiefile cleared successfully.")
+    # Cleanup tasks on application shutdown can go here if needed later
 
 app = FastAPI(
     title=settings.APP_NAME,

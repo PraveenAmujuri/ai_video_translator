@@ -47,7 +47,7 @@ async def upload_file(file: UploadFile = File(...)):
             id=job_id,
             file_path=str(file_path),
             original_filename=file.filename,
-        )
+            )
 
     return UploadResponse(
         job_id=job_id,
@@ -70,6 +70,8 @@ async def get_job_streams(job_id: str):
         "dubbed_audio_url": f"/uploads/{job_id}/dubbed_audio.mp3",
         "subtitle_url": f"/outputs/{job_id}/subtitles.vtt",
     }
+
+
 @router.post("/translate")
 async def translate(payload: JobCreate):
     job_id = str(uuid.uuid4())
@@ -79,6 +81,8 @@ async def translate(payload: JobCreate):
             db,
             id=job_id,
             youtube_url=payload.youtube_url,
+            # ARCHITECTURAL ROUTING FIX: Capture and persist the client extracted stream natively
+            video_stream_url=getattr(payload, "video_stream_url", None),
             source_language=payload.source_language,
             target_language=payload.target_language,
             voice=payload.voice,

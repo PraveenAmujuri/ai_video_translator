@@ -1,0 +1,38 @@
+name: Deploy EchoX with Docker and Nginx
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH Key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
+          script: |
+            # 1. Clone or pull down the project repository code
+            if [ ! -d "ai_video_translator" ]; then
+              git clone https://github.com/${{ github.repository }}.git ai_video_translator
+              cd ai_video_translator
+            else
+              cd ai_video_translator
+              git pull origin main
+            fi
+            
+            # 2. Dynamic generation of the production .env file using your GitHub Secrets
+            echo "DEBUG=${{ secrets.DEBUG }}" > .env
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
+            echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
+            echo "WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}" >> .env
+            echo "WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}" >> .env
+            
+            # 3. Handle Docker runtime execution safely
+            sudo docker-compose down
+            sudo docker-compose up -d --build
