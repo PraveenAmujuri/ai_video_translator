@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     SECRET_KEY: str = "change-me-in-production"
 
-    DATABASE_URL: str = "sqlite+aiosqlite:///./translator.db"
+    DATABASE_URL: str = "sqlite+aiosqlite:////app/data/translator.db"
 
     UPLOAD_DIR: Path = Path("./uploads")
     OUTPUT_DIR: Path = Path("./outputs")

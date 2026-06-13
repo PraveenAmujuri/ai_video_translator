@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from datetime import datetime
 from typing import Optional, Any, Dict
@@ -7,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from core.config import settings
 
-
+DB_DIR = "/app/data"
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR, exist_ok=True)
 engine = create_async_engine(
     str(settings.DATABASE_URL),
     echo=settings.DEBUG,
