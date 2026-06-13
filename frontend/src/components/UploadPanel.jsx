@@ -106,12 +106,13 @@ export default function UploadPanel({
     }
   }
 
-  // Unified absolute server fallback wrapper
+  // Passes explicit 'None' markers to keep parameter definitions aligned
   async function runServerFallback() {
     try {
       console.log("Engaging server-side backup tracker processing framework...");
       const res = await api.post("/translate", {
         youtube_url: youtubeUrl.trim(),
+        video_stream_url: null, // 👈 Explicitly pass null to cleanly initialize the server column structure
         target_language: language,
         source_language: "auto",
         voice: voice,
@@ -130,7 +131,6 @@ export default function UploadPanel({
     try {
       setStatus("processing");
 
-      // Isolate the unique 11-character YouTube Video ID cleanly
       const match = youtubeUrl.match(/(?:v=|\/|embed\/|youtu\.be\/)([0-9A-Za-z_-]{11})/);
       if (!match) {
         alert("Invalid YouTube URL structure.");
@@ -139,7 +139,6 @@ export default function UploadPanel({
       }
       const videoId = match[1];
 
-      // Set up a clean listener event receiver to catch the EchoX extension reply packet 
       const handleExtensionResponse = async (event) => {
         if (event.source !== window) return;
 
@@ -147,20 +146,26 @@ export default function UploadPanel({
           window.removeEventListener("message", handleExtensionResponse);
           
           const extractedStreamUrl = event.data.url;
-          console.log("EchoX Helper successfully extracted direct stream asset path. Dispatched to Railway.");
 
-          try {
-            // FIXED HANDSHAKE MAP: Sends the distinct client-side stream URL token to pop the backend column parameter fields properly
-            const res = await api.post("/translate", {
-              youtube_url: youtubeUrl.trim(),
-              video_stream_url: extractedStreamUrl,
-              target_language: language,
-              source_language: "auto",
-              voice: voice,
-            });
-            setJobId(res.data.job_id);
-          } catch (apiErr) {
-            console.error("API submission failed, retrying via server pipeline fallback...", apiErr);
+          // Validate that the returned URL string value from background configuration isn't empty
+          if (extractedStreamUrl && extractedStreamUrl.trim() !== "") {
+            console.log("🎯 EchoX Extension verified streaming URL payload. Dispatching to Azure Gateway.");
+            
+            try {
+              const res = await api.post("/translate", {
+                youtube_url: youtubeUrl.trim(),
+                video_stream_url: extractedStreamUrl.trim(),
+                target_language: language,
+                source_language: "auto",
+                voice: voice,
+              });
+              setJobId(res.data.job_id);
+            } catch (apiErr) {
+              console.error("API submission failed, retrying via server pipeline fallback...", apiErr);
+              runServerFallback();
+            }
+          } else {
+            console.warn("⚠️ Extension returned success signature but stream URL was blank. Engaging server fallback.");
             runServerFallback();
           }
         }
@@ -172,24 +177,13 @@ export default function UploadPanel({
         }
       };
 
-      // Register window runtime communications gate
       window.addEventListener("message", handleExtensionResponse);
-
-      // Dispatch tracking message straight to EchoX Stream Helper
       window.postMessage({ type: "EXTRACT_YOUTUBE", videoId }, "*");
 
-      // Extension Check Timeout: If extension is missing, fall back to server automatically in 4 seconds
       setTimeout(() => {
         window.removeEventListener("message", handleExtensionResponse);
-        // Only run if the listener didn't clear status due to an earlier completion event
         if (status === "idle" || status === "uploaded" || status === "uploading") return;
-        
-        // Check if tracking state is still blocked on extraction phase processing
-        const currentCheckState = document.querySelector('input[placeholder*="remote stream"]');
-        if (currentCheckState) {
-          console.log("EchoX Extension handshake timeout. Engaging backend server fallback engine...");
-          runServerFallback();
-        }
+        runServerFallback();
       }, 4000);
 
     } catch (err) {
