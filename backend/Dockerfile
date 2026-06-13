@@ -9,6 +9,7 @@ WORKDIR /app
 # Install system binaries required for multimedia processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
+    git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
