@@ -14,7 +14,7 @@ from core.utils import run_subprocess
 logger = logging.getLogger(__name__)
 
 
-async def extract_youtube_streams(url: str):
+async def extract_youtube_streams(url: str, client_stream_url: Optional[str] = None):
     """
     Extracts stable streaming audio and video links natively via yt-dlp.
     Includes a direct passthrough interceptor map for client-extracted browser tracks.
@@ -22,17 +22,27 @@ async def extract_youtube_streams(url: str):
     url = url.strip()
 
     # --- CLIENT-SIDE PASSTHROUGH INTERCEPTOR GATE ---
-    # Enhanced check: matches direct stream URLs while explicitly ignoring raw web pages
+    # Prioritize the database-persisted client stream url if provided by the task worker
+    if client_stream_url:
+        logger.info("Direct database-persisted client stream asset detected. Bypassing cloud extraction barriers cleanly.")
+        return {
+            "title": "Client Authenticated Source Stream",
+            "video_url": client_stream_url,
+            "audio_url": client_stream_url,
+            "duration": 0.0  # Recalculated dynamically downstream by your native ffprobe analyzer!
+        }
+
+    # Enhanced safety check: matches if a direct stream URL was mistakenly passed into the main url field
     is_direct_stream = "googlevideo.com" in url or "manifest" in url or url.startswith("http")
     is_raw_page = "youtube.com/watch" in url or "youtu.be/" in url
 
     if is_direct_stream and not is_raw_page:
-        logger.info("Direct browser-extracted stream asset target detected. Bypassing cloud extraction barriers cleanly.")
+        logger.info("Direct browser-extracted stream asset target detected in URL field.")
         return {
             "title": "Client Authenticated Source Stream",
             "video_url": url,
             "audio_url": url,
-            "duration": 0.0  # Recalculated dynamically downstream by your native ffprobe analyzer!
+            "duration": 0.0
         }
 
     logger.info(f"Fallback layer activated: Extracting streams via standard desktop browser client spoof for: {url}")
@@ -114,7 +124,6 @@ async def extract_youtube_streams(url: str):
             status_code=500,
             detail="Streaming extraction error. Shifting pipeline context."
         )
-
 
 async def download_audio_only(
     url: str,

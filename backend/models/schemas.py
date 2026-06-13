@@ -51,6 +51,7 @@ class JobCreate(BaseModel):
     tts_volume: str = "+0%"
     preserve_background_audio: bool = False
     background_audio_volume: float = 0.3
+    video_stream_url: Optional[str] = None
 
 
 class JobProgress(BaseModel):

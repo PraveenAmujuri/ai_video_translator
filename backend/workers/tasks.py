@@ -88,14 +88,16 @@ async def _run_pipeline(job_id: str):
             message="Extracting streams...",
         )
 
+
+
     # --- THE ARCHITECTURAL FIX ---
-    # Prioritize the browser-extracted stream token if it was updated in the DB by the API
-    media_target_url = job.video_stream_url if (hasattr(job, "video_stream_url") and job.video_stream_url) else job.youtube_url
+    # Pass both the original youtube link and the browser-extracted bypass stream token explicitly
+    video_stream_bypass = job.video_stream_url if (hasattr(job, "video_stream_url") and job.video_stream_url) else None
 
     streams = await extract_youtube_streams(
-        media_target_url
+        url=job.youtube_url,
+        client_stream_url=video_stream_bypass
     )
-
     video_stream_url = streams[
         "video_url"
     ]
