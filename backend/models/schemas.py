@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field , field_validator
 
 
 class JobStatus(str, Enum):
@@ -52,6 +52,13 @@ class JobCreate(BaseModel):
     preserve_background_audio: bool = False
     background_audio_volume: float = 0.3
     video_stream_url: Optional[str] = None
+
+    @field_validator("video_stream_url", mode="before")
+    @classmethod
+    def prevent_empty_string_defaults(cls, value: any) -> Optional[str]:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
 
 class JobProgress(BaseModel):

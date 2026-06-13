@@ -88,11 +88,15 @@ async def _run_pipeline(job_id: str):
             message="Extracting streams...",
         )
 
-
-
-    # --- THE ARCHITECTURAL FIX ---
-    # Pass both the original youtube link and the browser-extracted bypass stream token explicitly
-    video_stream_bypass = job.video_stream_url if (hasattr(job, "video_stream_url") and job.video_stream_url) else None
+    # Explicitly catch both None values and empty string overrides safely
+    job_stream_url = getattr(job, "video_stream_url", None)
+    
+    if job_stream_url and str(job_stream_url).strip():
+        video_stream_bypass = str(job_stream_url).strip()
+        logger.info(f"Extension link detected. Using client bypass track: {video_stream_bypass[:50]}...")
+    else:
+        video_stream_bypass = None
+        logger.info("No extension link found. Falling back to native server-side extraction track.")
 
     streams = await extract_youtube_streams(
         url=job.youtube_url,
