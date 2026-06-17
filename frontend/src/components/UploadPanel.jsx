@@ -17,6 +17,8 @@ export default function UploadPanel({
   status, // Hooked directly to track App status
 }) {
   const fileInputRef = useRef(null);
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -106,92 +108,29 @@ export default function UploadPanel({
     }
   }
 
-  // Passes explicit 'None' markers to keep parameter definitions aligned
-  async function runServerFallback() {
-    try {
-      console.log("Engaging server-side backup tracker processing framework...");
-      const res = await api.post("/translate", {
-        youtube_url: youtubeUrl.trim(),
-        video_stream_url: null, // 👈 Explicitly pass null to cleanly initialize the server column structure
-        target_language: language,
-        source_language: "auto",
-        voice: voice,
-      });
-      setJobId(res.data.job_id);
-    } catch (fallbackErr) {
-      console.error("Server processing exception:", fallbackErr);
-      alert("Failed to process YouTube stream pipeline.");
-      setStatus("idle");
-    }
-  }
-
   async function handleYoutubeSubmit() {
     if (!youtubeUrl || isDisabled) return;
 
     try {
       setStatus("processing");
 
-      const match = youtubeUrl.match(/(?:v=|\/|embed\/|youtu\.be\/)([0-9A-Za-z_-]{11})/);
-      if (!match) {
-        alert("Invalid YouTube URL structure.");
-        setStatus("idle");
-        return;
-      }
-      const videoId = match[1];
+      console.log("[EchoX UI] Dispatching pipeline lookup to backend...");
 
-      const handleExtensionResponse = async (event) => {
-        if (event.source !== window) return;
+      const res = await api.post("/translate", {
+        youtube_url: youtubeUrl.trim(),
+        video_stream_url: null,
+        target_language: language,
+        source_language: "auto",
+        voice: voice,
+      });
 
-        if (event.data.type === "YOUTUBE_EXTRACT_SUCCESS") {
-          window.removeEventListener("message", handleExtensionResponse);
-          
-          const extractedStreamUrl = event.data.url;
-
-          // Validate that the returned URL string value from background configuration isn't empty
-          if (extractedStreamUrl && extractedStreamUrl.trim() !== "") {
-            console.log("🎯 EchoX Extension verified streaming URL payload. Dispatching to Azure Gateway.");
-            
-            try {
-              const res = await api.post("/translate", {
-                youtube_url: youtubeUrl.trim(),
-                video_stream_url: extractedStreamUrl.trim(),
-                target_language: language,
-                source_language: "auto",
-                voice: voice,
-              });
-              setJobId(res.data.job_id);
-            } catch (apiErr) {
-              console.error("API submission failed, retrying via server pipeline fallback...", apiErr);
-              runServerFallback();
-            }
-          } else {
-            console.warn("⚠️ Extension returned success signature but stream URL was blank. Engaging server fallback.");
-            runServerFallback();
-          }
-        }
-
-        if (event.data.type === "YOUTUBE_EXTRACT_FAILED") {
-          window.removeEventListener("message", handleExtensionResponse);
-          console.warn("EchoX Extension parser hit a brick wall. Running fallback configuration.");
-          runServerFallback();
-        }
-      };
-
-      window.addEventListener("message", handleExtensionResponse);
-      window.postMessage({ type: "EXTRACT_YOUTUBE", videoId }, "*");
-
-      setTimeout(() => {
-        window.removeEventListener("message", handleExtensionResponse);
-        if (status === "idle" || status === "uploaded" || status === "uploading") return;
-        runServerFallback();
-      }, 4000);
-
+      setJobId(res.data.job_id);
     } catch (err) {
-      console.error("Initial pipeline handshake failure:", err);
-      runServerFallback();
+      console.error("Pipeline processing failure:", err);
+      alert("Failed to process YouTube stream pipeline.");
+      setStatus("idle");
     }
   }
-
   return (
     <div className="space-y-16 pt-24 px-6 md:px-10 transition-colors duration-300 text-black dark:text-white">
       

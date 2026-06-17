@@ -49,6 +49,8 @@ async def _run_pipeline(job_id: str):
     from services.media_service import (
         extract_youtube_streams,
         download_audio_only,
+        download_video_only,
+        merge_video_audio,
     )
 
     from services.ai_service import (
@@ -63,70 +65,78 @@ async def _run_pipeline(job_id: str):
     )
 
     async with AsyncSessionLocal() as db:
-
         job = await get_job(db, job_id)
+        if not job:
+            raise RuntimeError(f"Job {job_id} not found in database.")
 
-        source_language = (
-            job.source_language or "auto"
+        source_language = job.source_language or "auto"
+        target_language = job.target_language or "en"
+        voice = job.voice or settings.DEFAULT_VOICE
+        preserve_background = job.preserve_background_audio or False
+        background_volume = job.background_audio_volume or 0.3
+
+    if job.youtube_url:
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                status=JobStatus.DOWNLOADING,
+                progress=10,
+                message="Extracting streams...",
+            )
+
+        # Explicitly catch both None values and empty string overrides safely
+        job_stream_url = getattr(job, "video_stream_url", None)
+        
+        if job_stream_url and str(job_stream_url).strip():
+            video_stream_bypass = str(job_stream_url).strip()
+            logger.info(f"Extension link detected. Using client bypass track: {video_stream_bypass[:50]}...")
+        else:
+            video_stream_bypass = None
+            logger.info("No extension link found. Falling back to native server-side extraction track.")
+
+        streams = await extract_youtube_streams(
+            url=job.youtube_url,
+            client_stream_url=video_stream_bypass
         )
+        video_stream_url = streams["video_url"]
+        audio_stream_url = streams["audio_url"]
 
-        target_language = (
-            job.target_language or "en"
-        )
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                progress=20,
+                message="Downloading audio and video...",
+            )
 
-        voice = (
-            job.voice or settings.DEFAULT_VOICE
-        )
-
-    async with AsyncSessionLocal() as db:
-
-        await update_job(
-            db,
+        audio_path = await download_audio_only(
+            audio_stream_url,
             job_id,
-            status=JobStatus.DOWNLOADING,
-            progress=10,
-            message="Extracting streams...",
         )
 
-    # Explicitly catch both None values and empty string overrides safely
-    job_stream_url = getattr(job, "video_stream_url", None)
-    
-    if job_stream_url and str(job_stream_url).strip():
-        video_stream_bypass = str(job_stream_url).strip()
-        logger.info(f"Extension link detected. Using client bypass track: {video_stream_bypass[:50]}...")
+        video_path = await download_video_only(
+            video_stream_url,
+            job_id,
+        )
     else:
-        video_stream_bypass = None
-        logger.info("No extension link found. Falling back to native server-side extraction track.")
+        # Direct File Upload Pathway
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                status=JobStatus.EXTRACTING_AUDIO,
+                progress=15,
+                message="Extracting audio from uploaded video...",
+            )
 
-    streams = await extract_youtube_streams(
-        url=job.youtube_url,
-        client_stream_url=video_stream_bypass
-    )
-    video_stream_url = streams[
-        "video_url"
-    ]
-
-    audio_stream_url = streams[
-        "audio_url"
-    ]
-
-    async with AsyncSessionLocal() as db:
-
-        await update_job(
-            db,
+        video_path = Path(job.file_path)
+        audio_path = await download_audio_only(
+            str(video_path),
             job_id,
-            video_stream_url=video_stream_url,
-            progress=20,
-            message="Downloading audio only...",
         )
 
-    audio_path = await download_audio_only(
-        audio_stream_url,
-        job_id,
-    )
-
     async with AsyncSessionLocal() as db:
-
         await update_job(
             db,
             job_id,
@@ -140,16 +150,10 @@ async def _run_pipeline(job_id: str):
         source_language,
     )
 
-    segments = transcription[
-        "segments"
-    ]
-
-    detected_language = transcription[
-        "language"
-    ]
+    segments = transcription["segments"]
+    detected_language = transcription["language"]
 
     async with AsyncSessionLocal() as db:
-
         await update_job(
             db,
             job_id,
@@ -165,7 +169,6 @@ async def _run_pipeline(job_id: str):
     )
 
     async with AsyncSessionLocal() as db:
-
         await update_job(
             db,
             job_id,
@@ -186,17 +189,13 @@ async def _run_pipeline(job_id: str):
         output_path=dubbed_audio_path,
     )
 
-    subtitle_dir = (
-        settings.OUTPUT_DIR / job_id
-    )
-
+    subtitle_dir = settings.OUTPUT_DIR / job_id
     subtitle_dir.mkdir(
         parents=True,
         exist_ok=True,
     )
 
     srt_path = subtitle_dir / "subtitles.srt"
-
     vtt_path = subtitle_dir / "subtitles.vtt"
 
     generate_srt(
@@ -210,23 +209,34 @@ async def _run_pipeline(job_id: str):
     )
 
     async with AsyncSessionLocal() as db:
-
         job = await get_job(db, job_id)
-
-        job.set_segments(
-            translated_segments
-        )
-
+        job.set_segments(translated_segments)
         await db.commit()
 
     async with AsyncSessionLocal() as db:
-
         await update_job(
             db,
             job_id,
-            dubbed_audio_path=str(
-                dubbed_audio_path
-            ),
+            status=JobStatus.MERGING,
+            progress=90,
+            message="Merging video and audio...",
+        )
+
+    output_path = settings.OUTPUT_DIR / job_id / "output.mp4"
+    await merge_video_audio(
+        video_path=video_path,
+        audio_path=dubbed_audio_path,
+        output_path=output_path,
+        preserve_background=preserve_background,
+        background_volume=background_volume,
+    )
+
+    async with AsyncSessionLocal() as db:
+        await update_job(
+            db,
+            job_id,
+            video_stream_url=f"/outputs/{job_id}/output.mp4",
+            dubbed_audio_path=str(dubbed_audio_path),
             subtitle_path=str(vtt_path),
             status=JobStatus.COMPLETED,
             progress=100,

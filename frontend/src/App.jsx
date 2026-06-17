@@ -12,7 +12,6 @@ export default function App() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("idle");
   const [videoUrl, setVideoUrl] = useState(null);
-  const [dubbedAudioUrl, setDubbedAudioUrl] = useState(null);
   const [language, setLanguage] = useState("te");
   const [voice, setVoice] = useState("te-IN-MohanNeural");
 
@@ -90,7 +89,6 @@ export default function App() {
                 setProgress={setProgress}
                 setStatus={setStatus}
                 setVideoUrl={setVideoUrl}
-                setDubbedAudioUrl={setDubbedAudioUrl}
                 status={status}
               />
             </div>
@@ -137,7 +135,6 @@ export default function App() {
             <div className="relative">
               <VideoPlayer
                 videoUrl={videoUrl}
-                dubbedAudioUrl={dubbedAudioUrl}
               />
             </div>
           </section>

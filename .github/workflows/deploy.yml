@@ -29,13 +29,14 @@ jobs:
             sudo docker system prune -f
             sudo docker builder prune -f
             
-            # 2. Dynamic generation of the production .env file using your GitHub Secrets
             echo "DEBUG=${{ secrets.DEBUG }}" > .env
             echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
             echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
             echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
             echo "WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}" >> .env
             echo "WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}" >> .env
+            echo "RAPIDAPI_HOST=${{ secrets.RAPIDAPI_HOST }}" >> .env
+            echo "RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}" >> .env
             
             # 3. Handle Docker runtime execution safely
             sudo docker-compose down

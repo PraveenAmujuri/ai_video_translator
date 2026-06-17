@@ -7,7 +7,6 @@ export default function ProgressTracker({
   setProgress,
   setStatus,
   setVideoUrl,
-  setDubbedAudioUrl,
 }) {
 
   const [message, setMessage] =
@@ -67,10 +66,6 @@ export default function ProgressTracker({
 
             setVideoUrl(
               streamRes.data.video_url
-            );
-
-            setDubbedAudioUrl(
-              streamRes.data.dubbed_audio_url
             );
 
             clearInterval(

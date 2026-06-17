@@ -41,6 +41,9 @@ class VoiceInfo(BaseModel):
     neural: bool = True
 
 
+from pydantic import BaseModel, field_validator
+from typing import Optional, Union
+
 class JobCreate(BaseModel):
     source_language: Optional[str] = "auto"
     target_language: str = "en"
@@ -49,8 +52,8 @@ class JobCreate(BaseModel):
     tts_rate: str = "+0%"
     tts_pitch: str = "+0Hz"
     tts_volume: str = "+0%"
-    preserve_background_audio: bool = False
-    background_audio_volume: float = 0.3
+    preserve_background_audio: Union[bool, str] = False
+    background_audio_volume: Union[float, str] = 0.3
     video_stream_url: Optional[str] = None
 
     @field_validator("video_stream_url", mode="before")
@@ -60,7 +63,29 @@ class JobCreate(BaseModel):
             return None
         return value
 
+    # NEW FORM-DATA RECONCILER VALIDATORS
+    @field_validator("preserve_background_audio", mode="before")
+    @classmethod
+    def reconcile_form_booleans(cls, value: any) -> bool:
+        """Converts incoming multi-part string flags ('true'/'false') into actual python booleans."""
+        if isinstance(value, str):
+            clean_val = value.strip().lower()
+            if clean_val == "true":
+                return True
+            if clean_val == "false":
+                return False
+        return bool(value)
 
+    @field_validator("background_audio_volume", mode="before")
+    @classmethod
+    def reconcile_form_floats(cls, value: any) -> float:
+        """Converts incoming numerical text form inputs back into operational floats securely."""
+        if isinstance(value, str):
+            try:
+                return float(value.strip())
+            except ValueError:
+                return 0.3
+        return float(value)
 class JobProgress(BaseModel):
     job_id: str
     status: JobStatus
