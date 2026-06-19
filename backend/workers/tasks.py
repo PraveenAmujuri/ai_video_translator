@@ -54,8 +54,7 @@ async def _run_pipeline(job_id: str):
     )
 
     from services.ai_service import (
-        transcribe_audio,
-        translate_segments,
+        transcribe_and_translate_audio,
         generate_tts_audio,
     )
 
@@ -142,31 +141,16 @@ async def _run_pipeline(job_id: str):
             job_id,
             status=JobStatus.TRANSCRIBING,
             progress=35,
-            message="Transcribing audio...",
+            message="Transcribing and translating audio...",
         )
 
-    transcription = await transcribe_audio(
-        audio_path,
-        source_language,
+    result = await transcribe_and_translate_audio(
+        audio_path=audio_path,
+        source_language=source_language,
+        target_language=target_language,
     )
 
-    segments = transcription["segments"]
-    detected_language = transcription["language"]
-
-    async with AsyncSessionLocal() as db:
-        await update_job(
-            db,
-            job_id,
-            status=JobStatus.TRANSLATING,
-            progress=55,
-            message="Localizing subtitles...",
-        )
-
-    translated_segments = await translate_segments(
-        segments,
-        detected_language,
-        target_language,
-    )
+    translated_segments = result["segments"]
 
     async with AsyncSessionLocal() as db:
         await update_job(

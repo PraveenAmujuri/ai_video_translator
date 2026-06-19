@@ -9,15 +9,16 @@ from core.config import settings
 logger = logging.getLogger(__name__)
 
 # -----------------------------
-# GLOBAL MODEL CACHE
+# GLOBAL MODEL CACHE & GEMINI CLIENT
 # -----------------------------
 
 import os
-from groq import Groq
+from google import genai
+from google.genai import types
+from pydantic import BaseModel, Field
 
 _piper_models = {}
 _model_lock = asyncio.Lock()
-_groq_client = None
 
 MODEL_REGISTRY = {
     "en": "models/en_US-lessac-medium.onnx",
@@ -26,81 +27,43 @@ MODEL_REGISTRY = {
 }
 
 
-def get_groq_client() -> Groq:
-    global _groq_client
-    if _groq_client is None:
-        api_key = os.environ.get("GROQ_API_KEY")
-        if not api_key:
-            api_key = getattr(settings, "GROQ_API_KEY", None)
-        _groq_client = Groq(api_key=api_key)
-    return _groq_client
+class Segment(BaseModel):
+    id: int = Field(description="Segment sequence number starting from 0")
+    start: float = Field(description="Start time of the segment in seconds")
+    end: float = Field(description="End time of the segment in seconds")
+    text: str = Field(description="Original transcription text in the language spoken in the audio")
+    translated: str = Field(description="Translation of the transcription text into the target language")
+
+
+class TranscriptionTranslationResponse(BaseModel):
+    segments: List[Segment] = Field(description="List of transcription segments with timestamps and translations")
+    language: str = Field(description="Detected language code (e.g. 'en', 'es', 'hi', 'te') of the original spoken audio")
 
 
 # -----------------------------
-# GROQ AUDIO TRANSCRIPTION
+# MULTIMODAL TRANSCRIBE AND TRANSLATE
 # -----------------------------
 
-async def transcribe_audio(
+async def transcribe_and_translate_audio(
     audio_path: Path,
     source_language: Optional[str] = None,
+    target_language: str = "en"
 ) -> Dict[str, Any]:
+    """
+    Transcribes and translates audio in one step using the gemini-3.1-flash-lite multimodal model.
+    Uploads the audio via Google GenAI Files API, processes it with a robust prompt,
+    and cleans up the uploaded file securely.
+    """
+    api_key = settings.GEMINI_API_KEY
+    if not api_key:
+        api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY missing from settings and environment.")
 
-    client = get_groq_client()
-    loop = asyncio.get_event_loop()
+    client = genai.Client(api_key=api_key)
 
-    def _transcribe():
-        with open(str(audio_path), "rb") as file:
-            transcription = client.audio.transcriptions.create(
-                file=(audio_path.name, file.read()),
-                model="whisper-large-v3",
-                response_format="verbose_json",
-                language=source_language if source_language and source_language != "auto" else None,
-                timestamp_granularities=["segment"]
-            )
-
-        segments = []
-        for i, seg in enumerate(getattr(transcription, "segments", [])):
-            if isinstance(seg, dict):
-                seg_id = seg.get("id", i)
-                start = seg.get("start", 0.0)
-                end = seg.get("end", 0.0)
-                text = seg.get("text", "")
-            else:
-                seg_id = getattr(seg, "id", i)
-                start = getattr(seg, "start", 0.0)
-                end = getattr(seg, "end", 0.0)
-                text = getattr(seg, "text", "")
-
-            segments.append({
-                "id": seg_id,
-                "start": start,
-                "end": end,
-                "text": text.strip(),
-            })
-
-        return {
-            "segments": segments,
-            "language": getattr(transcription, "language", source_language or "en"),
-        }
-
-    return await loop.run_in_executor(
-        None,
-        _transcribe,
-    )
-
-
-# -----------------------------
-# TRANSLATION
-# -----------------------------
-async def translate_segments(
-    segments: List[Dict],
-    source_lang: str,
-    target_lang: str,
-) -> List[Dict]:
-
-    import requests
-    import asyncio
-    import json
+    logger.info(f"Uploading audio file {audio_path.name} to Gemini Files API...")
+    audio_file = await asyncio.to_thread(client.files.upload, file=audio_path)
 
     LANGUAGE_NAMES = {
         "en": "English",
@@ -108,149 +71,76 @@ async def translate_segments(
         "te": "Telugu",
         "ta": "Tamil",
         "ja": "Japanese",
+        "es": "Spanish",
+        "fr": "French",
+        "de": "German",
     }
+    target_language_name = LANGUAGE_NAMES.get(target_language, target_language)
 
-    target_language_name = LANGUAGE_NAMES.get(
-        target_lang,
-        target_lang,
-    )
+    prompt = f"""
+You are a state-of-the-art multimodal audio transcription and translation system.
+Listen to the entire audio file provided and perform the following actions:
+1. Detect the main spoken language in the audio (e.g. 'en', 'hi', 'te', 'es', etc.).
+2. Segment the audio naturally, ensuring each segment represents a complete phrase or clause of 2 to 7 seconds duration. Do not skip any words or parts of the audio.
+3. Transcribe the spoken audio verbatim inside the segment. Place the transcription of the original spoken language in the `"text"` field of the segment.
+4. Translate the segment text directly into "{target_language_name}". Place the translated text in the `"translated"` field of the segment. Keep the translation natural and conversational.
+5. Provide accurate start and end timestamps in seconds for each segment.
 
-    source_language_name = LANGUAGE_NAMES.get(
-        source_lang,
-        source_lang,
-    )
-
-    api_key = settings.GEMINI_API_KEY
-    
-    model_name = settings.GEMINI_MODEL
-
-    if not api_key:
-        raise RuntimeError(
-            "Gemini API key missing"
-        )
-
-    if source_lang == target_lang:
-
-        for seg in segments:
-            seg["translated"] = seg["text"]
-
-        return segments
-
-    translated_segments = []
-
-    loop = asyncio.get_event_loop()
-
-    for seg in segments:
-
-        original = seg["text"].strip()
-
-        if not original:
-
-            seg["translated"] = ""
-            translated_segments.append(seg)
-            continue
-
-        prompt = f"""
-You are a professional subtitle localizer.
-
-Translate the following spoken {source_language_name}
-into natural conversational {target_language_name}
-for AI video dubbing.
-
-RULES:
-- Keep meaning accurate
-- Keep subtitles short and natural
-- Do NOT translate word-by-word
-- Preserve tone and conversational flow
-- Return ONLY valid JSON
-- Do NOT add markdown
-- Do NOT explain anything
-- Do NOT add extra keys
-
-RESPONSE FORMAT:
-{{
-  "translated": "translated text here"
-}}
-
-TEXT:
-{original}
+Be extremely precise. The timestamps must align perfectly with the audio events.
+Return the result strictly as a JSON object matching the requested schema.
 """
 
-        url = (
-            "https://generativelanguage.googleapis.com/"
-            f"v1beta/models/{model_name}:generateContent?key={api_key}"
-        )
+    try:
+        logger.info("Generating content using gemini-3.1-flash-lite...")
 
-        body = {
-            "contents": [
-                {
-                    "parts": [
-                        {
-                            "text": prompt
-                        }
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.3,
-                "topP": 0.8,
-                "topK": 20,
-                "maxOutputTokens": 256,
-            }
-        }
-
-        def _translate():
-
-            response = requests.post(
-                url,
-                json=body,
-                timeout=40,
+        def _generate():
+            return client.models.generate_content(
+                model='gemini-3.1-flash-lite',
+                contents=[audio_file, prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=TranscriptionTranslationResponse,
+                    temperature=0.2,
+                )
             )
 
-            response.raise_for_status()
+        response = await asyncio.to_thread(_generate)
 
-            data = response.json()
-
-            text = data["candidates"][0]["content"]["parts"][0]["text"]
-
-            text = text.strip()
-
-            if text.startswith("```json"):
-                text = text.replace("```json", "")
-                text = text.replace("```", "")
-                text = text.strip()
-
-            parsed = json.loads(text)
-
-            translated = parsed.get(
-                "translated",
-                original,
-            )
-
-            return translated.strip()
+        import json
+        logger.info("Successfully received response from Gemini API.")
 
         try:
+            if response.text:
+                parsed_data = json.loads(response.text)
+            else:
+                raise ValueError("Response text is empty.")
+        except Exception as parse_err:
+            logger.error(f"Failed to parse Gemini response text: {response.text}. Error: {parse_err}")
+            raise RuntimeError(f"JSON parsing error from Gemini model: {parse_err}")
 
-            translated = await loop.run_in_executor(
-                None,
-                _translate,
-            )
+        segments = parsed_data.get("segments", [])
+        formatted_segments = []
+        for i, seg in enumerate(segments):
+            formatted_segments.append({
+                "id": seg.get("id", i),
+                "start": float(seg.get("start", 0.0)),
+                "end": float(seg.get("end", 0.0)),
+                "text": seg.get("text", "").strip(),
+                "translated": seg.get("translated", "").strip(),
+            })
 
-            logger.info(
-                f"{original} -> {translated}"
-            )
+        return {
+            "segments": formatted_segments,
+            "language": parsed_data.get("language", source_language or "en")
+        }
 
-            seg["translated"] = translated
-
-        except Exception as e:
-
-            logger.exception(e)
-
-            seg["translated"] = original
-
-        translated_segments.append(seg)
-
-    return translated_segments
+    finally:
+        logger.info(f"Cleaning up uploaded audio file {audio_file.name} from Gemini storage...")
+        try:
+            await asyncio.to_thread(client.files.delete, name=audio_file.name)
+            logger.info("Gemini file cleanup completed successfully.")
+        except Exception as cleanup_err:
+            logger.warning(f"Failed to delete file {audio_file.name}: {cleanup_err}")
 
 # -----------------------------
 # PIPER TTS
