@@ -12,9 +12,12 @@ logger = logging.getLogger(__name__)
 # GLOBAL MODEL CACHE
 # -----------------------------
 
-_whisper_model = None
+import os
+from groq import Groq
+
 _piper_models = {}
 _model_lock = asyncio.Lock()
+_groq_client = None
 
 MODEL_REGISTRY = {
     "en": "models/en_US-lessac-medium.onnx",
@@ -23,63 +26,61 @@ MODEL_REGISTRY = {
 }
 
 
+def get_groq_client() -> Groq:
+    global _groq_client
+    if _groq_client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            api_key = getattr(settings, "GROQ_API_KEY", None)
+        _groq_client = Groq(api_key=api_key)
+    return _groq_client
+
+
 # -----------------------------
-# WHISPER
+# GROQ AUDIO TRANSCRIPTION
 # -----------------------------
-
-async def get_whisper_model():
-
-    global _whisper_model
-
-    async with _model_lock:
-
-        if _whisper_model is None:
-
-            from faster_whisper import WhisperModel
-
-            logger.info(
-                f"Loading Whisper model: {settings.WHISPER_MODEL}"
-            )
-
-            _whisper_model = WhisperModel(
-                settings.WHISPER_MODEL,
-                device=settings.WHISPER_DEVICE,
-            )
-
-    return _whisper_model
-
 
 async def transcribe_audio(
     audio_path: Path,
     source_language: Optional[str] = None,
 ) -> Dict[str, Any]:
 
-    model = await get_whisper_model()
-
+    client = get_groq_client()
     loop = asyncio.get_event_loop()
 
     def _transcribe():
-
-        segments_iter, info = model.transcribe(
-            str(audio_path),
-            language=source_language if source_language != "auto" else None,
-            vad_filter=True,
-        )
+        with open(str(audio_path), "rb") as file:
+            transcription = client.audio.transcriptions.create(
+                file=(audio_path.name, file.read()),
+                model="whisper-large-v3-turbo",
+                response_format="verbose_json",
+                language=source_language if source_language and source_language != "auto" else None,
+                timestamp_granularities=["segment"]
+            )
 
         segments = []
-
-        for seg in segments_iter:
+        for i, seg in enumerate(getattr(transcription, "segments", [])):
+            if isinstance(seg, dict):
+                seg_id = seg.get("id", i)
+                start = seg.get("start", 0.0)
+                end = seg.get("end", 0.0)
+                text = seg.get("text", "")
+            else:
+                seg_id = getattr(seg, "id", i)
+                start = getattr(seg, "start", 0.0)
+                end = getattr(seg, "end", 0.0)
+                text = getattr(seg, "text", "")
 
             segments.append({
-                "id": seg.id,
-                "start": seg.start,
-                "end": seg.end,
-                "text": seg.text.strip(),
+                "id": seg_id,
+                "start": start,
+                "end": end,
+                "text": text.strip(),
             })
 
         return {
             "segments": segments,
-            "language": info.language,
+            "language": getattr(transcription, "language", source_language or "en"),
         }
 
     return await loop.run_in_executor(
