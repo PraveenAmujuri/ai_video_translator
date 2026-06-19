@@ -41,6 +41,12 @@ export default function UploadPanel({
       return;
     }
 
+    const max_size = 200 * 1024 * 1024; // 200MB
+    if (file.size > max_size) {
+      alert("File size exceeds the 200MB limit. Please upload a smaller video.");
+      return;
+    }
+
     setFileName(file.name);
     setFileSize(file.size);
 
@@ -49,23 +55,32 @@ export default function UploadPanel({
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("target_language", language);
+    formData.append("voice", voice);
+    formData.append("source_language", "auto");
+    formData.append("tts_rate", "+0%");
+    formData.append("tts_pitch", "+0Hz");
+    formData.append("tts_volume", "+0%");
+    formData.append("preserve_background_audio", "false");
+    formData.append("background_audio_volume", "0.3");
 
     try {
-      setStatus("uploading");
+      setStatus("processing");
       setIsUploading(true);
       simulateProgress();
 
-      const res = await api.post("/upload", formData);
+      const res = await api.post("/translate-stream", formData);
 
       setJobId(res.data.job_id);
-      setStatus("uploaded");
       setUploadProgress(100);
 
     } catch (err) {
       console.error(err);
-      alert("Upload failed");
+      const errMsg = err.response?.data?.detail || "Upload and translation failed.";
+      alert(errMsg);
       setUploadProgress(0);
       setStatus("idle");
+      setPreview(null);
     } finally {
       setIsUploading(false);
     }

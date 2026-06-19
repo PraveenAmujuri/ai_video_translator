@@ -34,8 +34,33 @@ async def upload_file(file: UploadFile = File(...)):
 
     file_path = upload_dir / file.filename
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Enforce 200MB size limit
+    max_size = 200 * 1024 * 1024
+    file_size = getattr(file, "size", None)
+    if file_size is not None and file_size > max_size:
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir)
+        raise HTTPException(
+            status_code=400,
+            detail="File size exceeds the maximum upload limit of 200MB."
+        )
+
+    try:
+        # Stream chunks to check size on the fly
+        total_bytes = 0
+        with open(file_path, "wb") as buffer:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > max_size:
+                    raise ValueError("File size exceeds the maximum upload limit of 200MB.")
+                buffer.write(chunk)
+    except Exception as stream_err:
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir)
+        raise HTTPException(status_code=400, detail=str(stream_err))
 
     media_type = MediaType.VIDEO
 
@@ -82,10 +107,29 @@ async def translate_binary_stream(
     
     file_path = upload_dir / file.filename
 
+    # Enforce 200MB size limit
+    max_size = 200 * 1024 * 1024
+    file_size = getattr(file, "size", None)
+    if file_size is not None and file_size > max_size:
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir)
+        raise HTTPException(
+            status_code=400,
+            detail="File size exceeds the maximum upload limit of 200MB."
+        )
+
     try:
         # 3. Stream the raw binary bytes coming from the client tab onto disk blocks
+        total_bytes = 0
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                total_bytes += len(chunk)
+                if total_bytes > max_size:
+                    raise ValueError("File size exceeds the maximum upload limit of 200MB.")
+                buffer.write(chunk)
 
         # Reconcile validation using JobCreate
         payload_dict = {
