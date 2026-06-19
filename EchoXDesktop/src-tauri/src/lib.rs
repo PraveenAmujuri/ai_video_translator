@@ -1,14 +1,28 @@
+use futures_util::StreamExt;
 use regex::Regex;
-use serde::Serialize;
+use reqwest::multipart;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::Emitter;
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::ShellExt;
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
+use tokio_util::codec::{BytesCodec, FramedRead};
+
+const BACKEND_URL: &str = "http://127.0.0.1:8000";
+const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct DownloadProgress {
     pub percentage: f32,
     pub speed: String,
     pub eta: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct TranslateStreamResponse {
+    job_id: String,
 }
 
 #[tauri::command]
@@ -47,7 +61,7 @@ pub async fn download_video(app: tauri::AppHandle, url: String) -> Result<String
     while let Some(event) = rx.recv().await {
         use tauri_plugin_shell::process::CommandEvent;
         match event {
-            CommandEvent::Stdout(line_bytes) => {
+            CommandEvent::Stdout(line_bytes) | CommandEvent::Stderr(line_bytes) => {
                 let line = String::from_utf8_lossy(&line_bytes);
                 if let Some(caps) = progress_re.captures(&line) {
                     let percentage = caps
@@ -62,41 +76,7 @@ pub async fn download_video(app: tauri::AppHandle, url: String) -> Result<String
                         .name("eta")
                         .map(|m| m.as_str().to_string())
                         .unwrap_or_default();
-
-                    let _ = app.emit(
-                        "download-progress",
-                        DownloadProgress {
-                            percentage,
-                            speed,
-                            eta,
-                        },
-                    );
-                }
-            }
-            CommandEvent::Stderr(line_bytes) => {
-                let line = String::from_utf8_lossy(&line_bytes);
-                if let Some(caps) = progress_re.captures(&line) {
-                    let percentage = caps
-                        .name("pct")
-                        .and_then(|m| m.as_str().parse::<f32>().ok())
-                        .unwrap_or(0.0);
-                    let speed = caps
-                        .name("speed")
-                        .map(|m| m.as_str().to_string())
-                        .unwrap_or_default();
-                    let eta = caps
-                        .name("eta")
-                        .map(|m| m.as_str().to_string())
-                        .unwrap_or_default();
-
-                    let _ = app.emit(
-                        "download-progress",
-                        DownloadProgress {
-                            percentage,
-                            speed,
-                            eta,
-                        },
-                    );
+                    let _ = app.emit("download-progress", DownloadProgress { percentage, speed, eta });
                 }
             }
             CommandEvent::Error(err) => {
@@ -114,13 +94,195 @@ pub async fn download_video(app: tauri::AppHandle, url: String) -> Result<String
     }
 
     if !output_path.exists() {
-        return Err(format!(
-            "yt-dlp did not produce output at: {}",
-            output_path_str
-        ));
+        return Err(format!("yt-dlp did not produce output at: {}", output_path_str));
     }
 
     Ok(output_path_str)
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TranslationPipelineParams {
+    pub file_path: String,
+    pub target_language: String,
+    pub voice: String,
+    pub source_language: Option<String>,
+    pub preserve_background_audio: Option<bool>,
+    pub background_audio_volume: Option<f32>,
+}
+
+#[tauri::command]
+pub async fn process_translation_pipeline(
+    params: TranslationPipelineParams,
+) -> Result<String, String> {
+    let path = PathBuf::from(&params.file_path);
+
+    if !path.exists() {
+        return Err(format!("File not found: {}", params.file_path));
+    }
+
+    let metadata = fs::metadata(&path)
+        .await
+        .map_err(|e| format!("Failed to read file metadata: {}", e))?;
+
+    if metadata.len() > MAX_FILE_BYTES {
+        return Err(format!(
+            "File exceeds 200MB limit ({:.1} MB)",
+            metadata.len() as f64 / 1024.0 / 1024.0
+        ));
+    }
+
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("upload.mp4")
+        .to_string();
+
+    let file = fs::File::open(&path)
+        .await
+        .map_err(|e| format!("Failed to open file: {}", e))?;
+
+    let stream = FramedRead::new(file, BytesCodec::new());
+    let file_body = reqwest::Body::wrap_stream(stream);
+
+    let file_part = multipart::Part::stream_with_length(file_body, metadata.len())
+        .file_name(file_name)
+        .mime_str("video/mp4")
+        .map_err(|e| format!("Failed to set MIME type: {}", e))?;
+
+    let mut form = multipart::Form::new().part("file", file_part);
+
+    form = form
+        .text("target_language", params.target_language)
+        .text("voice", params.voice);
+
+    if let Some(src_lang) = params.source_language {
+        form = form.text("source_language", src_lang);
+    }
+
+    form = form.text(
+        "preserve_background_audio",
+        params.preserve_background_audio.unwrap_or(false).to_string(),
+    );
+
+    form = form.text(
+        "background_audio_volume",
+        format!("{:.2}", params.background_audio_volume.unwrap_or(0.3)),
+    );
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(format!("{}/translate-stream", BACKEND_URL))
+        .multipart(form)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status().as_u16();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Backend error {}: {}", status, body));
+    }
+
+    let parsed: TranslateStreamResponse = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse backend response: {}", e))?;
+
+    Ok(parsed.job_id)
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct SaveProgress {
+    pub percentage: f32,
+    pub downloaded_bytes: u64,
+    pub total_bytes: u64,
+}
+
+#[tauri::command]
+pub async fn save_translated_video(
+    app: tauri::AppHandle,
+    job_id: String,
+) -> Result<String, String> {
+    let dest_path = app
+        .dialog()
+        .file()
+        .set_file_name("translated_video.mp4")
+        .add_filter("MP4 Video", &["mp4"])
+        .blocking_save_file();
+
+    let dest_path = match dest_path {
+        Some(p) => p,
+        None => return Err("Save cancelled by user".to_string()),
+    };
+
+    let dest_path_buf = dest_path
+        .as_path()
+        .ok_or_else(|| "Invalid save path".to_string())?
+        .to_path_buf();
+
+    if let Some(parent) = dest_path_buf.parent() {
+        fs::create_dir_all(parent)
+            .await
+            .map_err(|e| format!("Failed to create directories: {}", e))?;
+    }
+
+    let download_url = format!("{}/outputs/{}/output.mp4", BACKEND_URL, job_id);
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&download_url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to connect to backend: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status().as_u16();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Backend error {}: {}", status, body));
+    }
+
+    let total_bytes = response.content_length().unwrap_or(0);
+
+    let mut file = fs::File::create(&dest_path_buf)
+        .await
+        .map_err(|e| format!("Failed to create destination file: {}", e))?;
+
+    let mut stream = response.bytes_stream();
+    let mut downloaded_bytes: u64 = 0;
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Stream read error: {}", e))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("File write error: {}", e))?;
+        downloaded_bytes += chunk.len() as u64;
+
+        let percentage = if total_bytes > 0 {
+            (downloaded_bytes as f32 / total_bytes as f32) * 100.0
+        } else {
+            0.0
+        };
+
+        let _ = app.emit(
+            "save-progress",
+            SaveProgress {
+                percentage,
+                downloaded_bytes,
+                total_bytes,
+            },
+        );
+    }
+
+    file.flush()
+        .await
+        .map_err(|e| format!("Failed to flush file: {}", e))?;
+
+    let saved_path = dest_path_buf
+        .to_str()
+        .ok_or_else(|| "Saved path is not valid UTF-8".to_string())?
+        .to_string();
+
+    Ok(saved_path)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -129,7 +291,11 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![download_video])
+        .invoke_handler(tauri::generate_handler![
+            download_video,
+            process_translation_pipeline,
+            save_translated_video
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
