@@ -1,51 +1,80 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useTranslationPipeline } from "./hooks/useTranslationPipeline";
+import { SourcePanel } from "./components/SourcePanel/SourcePanel";
+import { ControlPanel } from "./components/ControlPanel/ControlPanel";
+import { ProgressTrack } from "./components/ProgressTrack/ProgressTrack";
+import { StatusChip } from "./components/ProgressTrack/StatusChip";
+import { HudMonitor } from "./components/HudMonitor/HudMonitor";
+import { OutputPanel } from "./components/OutputPanel/OutputPanel";
+import type { TranslationOptions } from "./types";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const DEFAULT_OPTIONS: TranslationOptions = {
+  targetLanguage: "hi",
+  voice: "hi-IN-rohan",
+  sourceLanguage: "auto",
+};
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+export default function App() {
+  const { state, endpoints, actions } = useTranslationPipeline();
+  const [options, setOptions] = useState<TranslationOptions>(DEFAULT_OPTIONS);
+
+  const isActive =
+    state.phase !== "idle" &&
+    state.phase !== "completed" &&
+    state.phase !== "error";
+
+  const handleFileReady = (path: string) => {
+    actions.startFromLocalFile(path, options);
+  };
+
+  const handleYouTubeReady = (url: string) => {
+    actions.startFromYouTubeUrl(url, options);
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div data-app="echox">
+      <header>
+        <h1>EchoX</h1>
+        <StatusChip phase={state.phase} />
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+      <main>
+        <SourcePanel
+          onFileReady={handleFileReady}
+          onYouTubeReady={handleYouTubeReady}
+          disabled={isActive}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+
+        <ControlPanel
+          options={options}
+          onChange={setOptions}
+          disabled={isActive}
+        />
+
+        <ProgressTrack
+          phase={state.phase}
+          translationProgress={state.translationProgress}
+          downloadProgress={state.downloadProgress}
+        />
+
+        {state.phase === "error" && state.error && (
+          <div role="alert" aria-label="Error">
+            <span>{state.error}</span>
+          </div>
+        )}
+
+        {state.phase === "completed" && endpoints && (
+          <OutputPanel endpoints={endpoints} onSave={actions.saveOutput} />
+        )}
+
+        {(state.phase === "completed" || state.phase === "error") && (
+          <button type="button" onClick={actions.reset}>
+            Start over
+          </button>
+        )}
+      </main>
+
+      <HudMonitor logs={state.logs} />
+    </div>
   );
 }
-
-export default App;

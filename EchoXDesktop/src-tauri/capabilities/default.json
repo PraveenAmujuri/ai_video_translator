@@ -5,17 +5,15 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:default",
-    "shell:allow-execute",
+    "opener:default",
     "dialog:default",
-    "dialog:allow-save",
-    "dialog:allow-open",
     {
-      "identifier": "shell:allow-sidecar",
+      "identifier": "shell:allow-spawn",
       "allow": [
         {
-          "name": "binaries/yt-dlp",
-          "sidecar": true
+          "name": "yt-dlp",
+          "sidecar": true,
+          "args": true
         }
       ]
     }

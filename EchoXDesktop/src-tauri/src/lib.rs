@@ -14,10 +14,10 @@ const BACKEND_URL: &str = "http://127.0.0.1:8000";
 const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DownloadProgress {
-    pub percentage: f32,
-    pub speed: String,
-    pub eta: String,
+struct DownloadProgress {
+    percentage: f32,
+    speed: String,
+    eta: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -25,8 +25,23 @@ struct TranslateStreamResponse {
     job_id: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct TranslationPipelineParams {
+    file_path: String,
+    target_language: String,
+    voice: String,
+    source_language: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct SaveProgress {
+    percentage: f32,
+    downloaded_bytes: u64,
+    total_bytes: u64,
+}
+
 #[tauri::command]
-pub async fn download_video(app: tauri::AppHandle, url: String) -> Result<String, String> {
+async fn download_video(app: tauri::AppHandle, url: String) -> Result<String, String> {
     let tmp_dir = std::env::temp_dir();
     let job_id = uuid::Uuid::new_v4().to_string();
     let output_path: PathBuf = tmp_dir.join(format!("echox_{}.mp4", job_id));
@@ -94,24 +109,17 @@ pub async fn download_video(app: tauri::AppHandle, url: String) -> Result<String
     }
 
     if !output_path.exists() {
-        return Err(format!("yt-dlp did not produce output at: {}", output_path_str));
+        return Err(format!(
+            "yt-dlp did not produce output at: {}",
+            output_path_str
+        ));
     }
 
     Ok(output_path_str)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TranslationPipelineParams {
-    pub file_path: String,
-    pub target_language: String,
-    pub voice: String,
-    pub source_language: Option<String>,
-    pub preserve_background_audio: Option<bool>,
-    pub background_audio_volume: Option<f32>,
-}
-
 #[tauri::command]
-pub async fn process_translation_pipeline(
+async fn process_translation_pipeline(
     params: TranslationPipelineParams,
 ) -> Result<String, String> {
     let path = PathBuf::from(&params.file_path);
@@ -159,16 +167,6 @@ pub async fn process_translation_pipeline(
         form = form.text("source_language", src_lang);
     }
 
-    form = form.text(
-        "preserve_background_audio",
-        params.preserve_background_audio.unwrap_or(false).to_string(),
-    );
-
-    form = form.text(
-        "background_audio_volume",
-        format!("{:.2}", params.background_audio_volume.unwrap_or(0.3)),
-    );
-
     let client = reqwest::Client::new();
     let response = client
         .post(format!("{}/translate-stream", BACKEND_URL))
@@ -191,15 +189,8 @@ pub async fn process_translation_pipeline(
     Ok(parsed.job_id)
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct SaveProgress {
-    pub percentage: f32,
-    pub downloaded_bytes: u64,
-    pub total_bytes: u64,
-}
-
 #[tauri::command]
-pub async fn save_translated_video(
+async fn save_translated_video(
     app: tauri::AppHandle,
     job_id: String,
 ) -> Result<String, String> {
@@ -216,9 +207,8 @@ pub async fn save_translated_video(
     };
 
     let dest_path_buf = dest_path
-        .as_path()
-        .ok_or_else(|| "Invalid save path".to_string())?
-        .to_path_buf();
+        .into_path()
+        .map_err(|e| format!("Invalid save path: {}", e))?;
 
     if let Some(parent) = dest_path_buf.parent() {
         fs::create_dir_all(parent)
