@@ -15,7 +15,13 @@ const PHASE_LABELS: Record<PipelinePhase, string> = {
 
 export function StatusChip({ phase }: StatusChipProps) {
   return (
-    <span role="status" aria-label={`Pipeline status: ${PHASE_LABELS[phase]}`} data-phase={phase}>
+    <span
+      role="status"
+      aria-label={`Pipeline status: ${PHASE_LABELS[phase]}`}
+      data-phase={phase}
+      className="status-chip"
+    >
+      <span className="status-dot" aria-hidden="true" />
       {PHASE_LABELS[phase]}
     </span>
   );

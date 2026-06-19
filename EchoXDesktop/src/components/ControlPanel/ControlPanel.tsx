@@ -27,31 +27,39 @@ export function ControlPanel({ options, onChange, disabled }: ControlPanelProps)
   };
 
   return (
-    <section aria-label="Translation settings">
-      <LanguageSelect
-        id="target-language"
-        label="Target language"
-        value={options.targetLanguage}
-        options={TARGET_LANGUAGES}
-        onChange={handleTargetLanguageChange}
-        disabled={disabled}
-      />
+    <section className="panel" aria-label="Translation settings">
+      <div className="panel-header">
+        <div className="panel-title">
+          <span className="panel-eyebrow">Translation</span>
+        </div>
+      </div>
 
-      <VoiceSelect
-        value={options.voice}
-        voices={voices}
-        onChange={(code) => onChange({ ...options, voice: code })}
-        disabled={disabled}
-      />
+      <div className="panel-body">
+        <LanguageSelect
+          id="target-language"
+          label="Target language"
+          value={options.targetLanguage}
+          options={TARGET_LANGUAGES}
+          onChange={handleTargetLanguageChange}
+          disabled={disabled}
+        />
 
-      <LanguageSelect
-        id="source-language"
-        label="Source language"
-        value={options.sourceLanguage}
-        options={SOURCE_LANGUAGES}
-        onChange={(code) => onChange({ ...options, sourceLanguage: code })}
-        disabled={disabled}
-      />
+        <VoiceSelect
+          value={options.voice}
+          voices={voices}
+          onChange={(code) => onChange({ ...options, voice: code })}
+          disabled={disabled}
+        />
+
+        <LanguageSelect
+          id="source-language"
+          label="Source language"
+          value={options.sourceLanguage}
+          options={SOURCE_LANGUAGES}
+          onChange={(code) => onChange({ ...options, sourceLanguage: code })}
+          disabled={disabled}
+        />
+      </div>
     </section>
   );
 }

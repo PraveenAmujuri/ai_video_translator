@@ -71,6 +71,7 @@ export function FileDropZone({ onFileSelected, disabled }: FileDropZoneProps) {
 
   return (
     <div
+      className="dropzone"
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
@@ -82,10 +83,34 @@ export function FileDropZone({ onFileSelected, disabled }: FileDropZoneProps) {
         if (e.key === "Enter" || e.key === " ") handleClick();
       }}
     >
+      <span className="dropzone-icon" aria-hidden="true">
+        {displayName ? (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h6.879a2 2 0 0 1 1.414.586l3.621 3.621A2 2 0 0 1 19 9.621V17.5A2.5 2.5 0 0 1 16.5 20h-10A2.5 2.5 0 0 1 4 17.5v-11Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/>
+            <path d="m9 13 2 2 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M12 4v11" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+            <path d="m7.5 8.5 4.5-4.5 4.5 4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+          </svg>
+        )}
+      </span>
       {displayName ? (
-        <span data-role="filename">{displayName}</span>
+        <>
+          <span className="dropzone-filename" data-role="filename" title={selectedPath ?? undefined}>
+            {displayName}
+          </span>
+          <span className="dropzone-sub">Click to choose a different file</span>
+        </>
       ) : (
-        <span data-role="prompt">Drop video file here or click to browse</span>
+        <>
+          <span className="dropzone-prompt" data-role="prompt">
+            Drop a video here, or click to browse
+          </span>
+          <span className="dropzone-sub">.mp4 · .mov · .webm · .mkv · .avi  ·  up to 200 MB</span>
+        </>
       )}
     </div>
   );

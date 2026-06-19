@@ -14,11 +14,17 @@ export function HudMonitor({ logs }: HudMonitorProps) {
   }, [logs]);
 
   return (
-    <section aria-label="Activity log" aria-live="polite" aria-relevant="additions">
+    <div
+      className="hud"
+      role="log"
+      aria-label="Activity log"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
       {logs.map((entry) => (
         <LogLine key={`${entry.timestamp}-${entry.message}`} entry={entry} />
       ))}
       <div ref={bottomRef} aria-hidden="true" />
-    </section>
+    </div>
   );
 }

@@ -18,24 +18,27 @@ export function VoiceSelect({
     : (voices[0]?.code ?? "");
 
   return (
-    <div>
-      <label htmlFor="voice-select">Voice</label>
-      <select
-        id="voice-select"
-        value={safeValue}
-        onChange={(e) => onChange(e.currentTarget.value)}
-        disabled={disabled || voices.length === 0}
-      >
-        {voices.length === 0 ? (
-          <option value="">No voices available</option>
-        ) : (
-          voices.map((v) => (
-            <option key={v.code} value={v.code}>
-              {v.label} ({v.gender})
-            </option>
-          ))
-        )}
-      </select>
+    <div className="field">
+      <label htmlFor="voice-select" className="field-label">Voice</label>
+      <div className="select-wrap">
+        <select
+          id="voice-select"
+          value={safeValue}
+          onChange={(e) => onChange(e.currentTarget.value)}
+          disabled={disabled || voices.length === 0}
+          className="select"
+        >
+          {voices.length === 0 ? (
+            <option value="">No voices available</option>
+          ) : (
+            voices.map((v) => (
+              <option key={v.code} value={v.code}>
+                {v.label} · {v.gender}
+              </option>
+            ))
+          )}
+        </select>
+      </div>
     </div>
   );
 }

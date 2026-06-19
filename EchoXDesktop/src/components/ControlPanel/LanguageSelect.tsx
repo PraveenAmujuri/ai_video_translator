@@ -18,20 +18,23 @@ export function LanguageSelect({
   disabled,
 }: LanguageSelectProps) {
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.currentTarget.value)}
-        disabled={disabled}
-      >
-        {options.map((opt) => (
-          <option key={opt.code} value={opt.code}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+    <div className="field">
+      <label htmlFor={id} className="field-label">{label}</label>
+      <div className="select-wrap">
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.currentTarget.value)}
+          disabled={disabled}
+          className="select"
+        >
+          {options.map((opt) => (
+            <option key={opt.code} value={opt.code}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

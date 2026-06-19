@@ -10,6 +10,15 @@ interface ProgressTrackProps {
   downloadProgress: DownloadProgressEvent | null;
 }
 
+const PHASE_HEADING: Record<PipelinePhase, string> = {
+  idle: "Idle",
+  downloading: "Downloading source",
+  uploading: "Uploading to translator",
+  processing: "Translating",
+  completed: "Translation complete",
+  error: "Failed",
+};
+
 function resolveProgress(
   phase: PipelinePhase,
   translationProgress: TranslationJobProgress | null,
@@ -22,19 +31,19 @@ function resolveProgress(
   return 0;
 }
 
-function resolveLabel(
+function resolveDetail(
   phase: PipelinePhase,
   translationProgress: TranslationJobProgress | null,
   downloadProgress: DownloadProgressEvent | null
 ): string {
   if (phase === "downloading" && downloadProgress) {
-    return `${downloadProgress.percentage.toFixed(1)}% @ ${downloadProgress.speed} — ETA ${downloadProgress.eta}`;
+    return `${downloadProgress.speed}  ·  ETA ${downloadProgress.eta}`;
   }
-  if (phase === "uploading") return "Uploading…";
+  if (phase === "uploading") return "Streaming file to backend…";
   if (phase === "processing" && translationProgress) {
-    return translationProgress.message || `${translationProgress.progress}%`;
+    return translationProgress.message || "Working…";
   }
-  if (phase === "completed") return "Done";
+  if (phase === "completed") return "Output ready for download";
   return "";
 }
 
@@ -44,32 +53,45 @@ export function ProgressTrack({
   downloadProgress,
 }: ProgressTrackProps) {
   const progress = resolveProgress(phase, translationProgress, downloadProgress);
-  const label = resolveLabel(phase, translationProgress, downloadProgress);
+  const detail = resolveDetail(phase, translationProgress, downloadProgress);
 
-  const isVisible =
-    phase !== "idle" && phase !== "error";
-
+  const isVisible = phase !== "idle" && phase !== "error";
   if (!isVisible) return null;
 
-  const translateX = `${progress - 100}%`;
+  const isIndeterminate = phase === "uploading";
 
   return (
-    <div role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label="Translation progress">
-      <div
-        data-role="track"
-        style={{ overflow: "hidden", position: "relative" }}
-      >
+    <section
+      className="panel"
+      aria-label="Translation progress"
+    >
+      <div className="panel-body progress">
+        <div className="progress-meta">
+          <span className="progress-label">{PHASE_HEADING[phase]}</span>
+          <span className="progress-value">
+            {isIndeterminate ? "—" : `${Math.round(progress)}%`}
+          </span>
+        </div>
         <div
-          data-role="fill"
-          data-phase={phase}
-          style={{
-            width: "100%",
-            transform: `translateX(${translateX})`,
-            willChange: "transform",
-          }}
-        />
+          className="progress-track"
+          role="progressbar"
+          aria-valuenow={isIndeterminate ? undefined : Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Translation progress"
+          data-indeterminate={isIndeterminate || undefined}
+        >
+          <div
+            className="progress-fill"
+            data-role="fill"
+            data-phase={phase}
+            style={{ ["--progress" as string]: `${progress}%` }}
+          />
+        </div>
+        {detail && (
+          <span className="field-help" data-role="label">{detail}</span>
+        )}
       </div>
-      {label && <span data-role="label">{label}</span>}
-    </div>
+    </section>
   );
 }

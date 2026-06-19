@@ -4,6 +4,12 @@ interface LogLineProps {
   entry: LogEntry;
 }
 
+const LEVEL_GLYPH: Record<LogEntry["level"], string> = {
+  info: "›",
+  warn: "!",
+  error: "×",
+};
+
 function formatTimestamp(ts: number): string {
   const d = new Date(ts);
   const h = d.getHours().toString().padStart(2, "0");
@@ -14,11 +20,15 @@ function formatTimestamp(ts: number): string {
 
 export function LogLine({ entry }: LogLineProps) {
   return (
-    <div role="log" data-level={entry.level}>
-      <time dateTime={new Date(entry.timestamp).toISOString()}>
+    <div className="log" data-level={entry.level}>
+      <time
+        className="log-time"
+        dateTime={new Date(entry.timestamp).toISOString()}
+      >
         {formatTimestamp(entry.timestamp)}
       </time>
-      <span>{entry.message}</span>
+      <span className="log-level" aria-hidden="true">{LEVEL_GLYPH[entry.level]}</span>
+      <span className="log-message">{entry.message}</span>
     </div>
   );
 }
