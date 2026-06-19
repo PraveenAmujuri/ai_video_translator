@@ -52,7 +52,7 @@ async def transcribe_audio(
         with open(str(audio_path), "rb") as file:
             transcription = client.audio.transcriptions.create(
                 file=(audio_path.name, file.read()),
-                model="whisper-large-v3-turbo",
+                model="whisper-large-v3",
                 response_format="verbose_json",
                 language=source_language if source_language and source_language != "auto" else None,
                 timestamp_granularities=["segment"]
