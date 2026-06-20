@@ -17,6 +17,31 @@ from core.utils import LANGUAGE_MAP
 router = APIRouter()
 
 
+def validate_media_file(filename: str, content_type: Optional[str]) -> str:
+    """
+    Validates file extension and content type.
+    Returns 'video' or 'audio' if valid, raises HTTPException otherwise.
+    """
+    ext = os.path.splitext(filename)[1].lower()
+    allowed_video_exts = {".mp4", ".webm", ".avi", ".mkv", ".mov"}
+    allowed_audio_exts = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus"}
+    
+    is_video = ext in allowed_video_exts or (content_type and content_type in settings.ALLOWED_VIDEO_TYPES)
+    is_audio = ext in allowed_audio_exts or (content_type and content_type in settings.ALLOWED_AUDIO_TYPES)
+    
+    if not (is_video or is_audio):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file type. "
+                f"Allowed video extensions: {', '.join(allowed_video_exts)}. "
+                f"Allowed audio extensions: {', '.join(allowed_audio_exts)}."
+            )
+        )
+        
+    return "video" if is_video else "audio"
+
+
 @router.get("/")
 async def root():
     return {
@@ -27,6 +52,10 @@ async def root():
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...)):
+    # Validate MIME type and file extension first
+    detected_type = validate_media_file(file.filename, file.content_type)
+    media_type = MediaType.AUDIO if detected_type == "audio" else MediaType.VIDEO
+
     job_id = str(uuid.uuid4())
 
     upload_dir = settings.UPLOAD_DIR / job_id
@@ -62,18 +91,13 @@ async def upload_file(file: UploadFile = File(...)):
             shutil.rmtree(upload_dir)
         raise HTTPException(status_code=400, detail=str(stream_err))
 
-    media_type = MediaType.VIDEO
-
-    if file.content_type:
-        if file.content_type.startswith("audio"):
-            media_type = MediaType.AUDIO
-
     async with AsyncSessionLocal() as db:
         await create_job(
             db,
             id=job_id,
             file_path=str(file_path),
             original_filename=file.filename,
+            media_type=media_type,
         )
 
     return UploadResponse(
@@ -98,6 +122,10 @@ async def translate_binary_stream(
     preserve_background_audio: str = Form("false"),
     background_audio_volume: str = Form("0.3")
 ):
+    # Validate MIME type and file extension first
+    detected_type = validate_media_file(file.filename, file.content_type)
+    media_type = MediaType.AUDIO if detected_type == "audio" else MediaType.VIDEO
+
     # 1. Align seamlessly with your unique uuid generation standard
     job_id = str(uuid.uuid4())
 
@@ -156,6 +184,7 @@ async def translate_binary_stream(
                 id=job_id,
                 file_path=str(file_path),
                 youtube_url=validated_data.youtube_url,
+                media_type=media_type,
                 original_filename=file.filename,
                 source_language=validated_data.source_language,
                 target_language=validated_data.target_language,
@@ -211,6 +240,7 @@ async def translate(payload: JobCreate):
             db,
             id=job_id,
             youtube_url=payload.youtube_url,
+            media_type=MediaType.YOUTUBE,
             video_stream_url=getattr(payload, "video_stream_url", None),
             source_language=payload.source_language,
             target_language=payload.target_language,

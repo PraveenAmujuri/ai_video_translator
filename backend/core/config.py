@@ -16,7 +16,15 @@ class Settings(BaseSettings):
 
     MAX_UPLOAD_SIZE: int = 2 * 1024 * 1024 * 1024  # 2GB
     ALLOWED_VIDEO_TYPES: list = ["video/mp4", "video/webm", "video/avi", "video/mkv", "video/mov"]
-    ALLOWED_AUDIO_TYPES: list = ["audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/mp4"]
+    ALLOWED_AUDIO_TYPES: list = [
+        "audio/mpeg", "audio/mp3",
+        "audio/wav", "audio/x-wav", "audio/wave",
+        "audio/mp4", "audio/m4a", "audio/x-m4a",
+        "audio/aac", "audio/x-aac",
+        "audio/flac", "audio/x-flac",
+        "audio/ogg", "application/ogg",
+        "audio/opus"
+    ]
 
     WHISPER_MODEL: str = "base"
     WHISPER_DEVICE: str = "cpu"

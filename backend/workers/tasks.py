@@ -51,6 +51,8 @@ async def _run_pipeline(job_id: str):
         download_audio_only,
         download_video_only,
         merge_video_audio,
+        generate_audio_output,
+        create_static_video,
     )
 
     from services.ai_service import (
@@ -73,6 +75,18 @@ async def _run_pipeline(job_id: str):
         voice = job.voice or settings.DEFAULT_VOICE
         preserve_background = job.preserve_background_audio or False
         background_volume = job.background_audio_volume or 0.3
+        media_type = job.media_type
+
+    # Determine if input is audio
+    is_audio_file = False
+    if not job.youtube_url:
+        if media_type == "audio":
+            is_audio_file = True
+        else:
+            file_ext = Path(job.file_path).suffix.lower()
+            allowed_audio_exts = {".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus"}
+            if file_ext in allowed_audio_exts:
+                is_audio_file = True
 
     if job.youtube_url:
         async with AsyncSessionLocal() as db:
@@ -118,8 +132,21 @@ async def _run_pipeline(job_id: str):
             video_stream_url,
             job_id,
         )
+    elif is_audio_file:
+        # Direct Audio Upload Pathway
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                status=JobStatus.TRANSCRIBING,
+                progress=25,
+                message="Preparing audio file...",
+            )
+
+        audio_path = Path(job.file_path)
+        video_path = None
     else:
-        # Direct File Upload Pathway
+        # Direct Video File Upload Pathway
         async with AsyncSessionLocal() as db:
             await update_job(
                 db,
@@ -197,35 +224,98 @@ async def _run_pipeline(job_id: str):
         job.set_segments(translated_segments)
         await db.commit()
 
-    async with AsyncSessionLocal() as db:
-        await update_job(
-            db,
-            job_id,
-            status=JobStatus.MERGING,
-            progress=90,
-            message="Merging video and audio...",
+    if is_audio_file:
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                status=JobStatus.MERGING,
+                progress=90,
+                message="Generating final audio outputs...",
+            )
+
+        original_ext = Path(job.file_path).suffix.lower()
+        if not original_ext:
+            original_ext = ".mp3"
+            
+        translated_audio_dir = settings.OUTPUT_DIR / job_id
+        translated_audio_dir.mkdir(parents=True, exist_ok=True)
+        translated_audio_path = translated_audio_dir / f"translated_audio{original_ext}"
+        
+        await generate_audio_output(
+            original_audio_path=audio_path,
+            dubbed_audio_path=dubbed_audio_path,
+            output_audio_path=translated_audio_path,
+            preserve_background=preserve_background,
+            background_volume=background_volume,
+        )
+        
+        # Additionally generate static cover video for desktop client consistency
+        output_path = settings.OUTPUT_DIR / job_id / "output.mp4"
+        await create_static_video(
+            audio_path=translated_audio_path,
+            output_video_path=output_path,
+        )
+        
+        # Cleanup intermediate temp files to save space
+        for temp_file_name in ["audio.wav", "dubbed_audio.mp3"]:
+            temp_file_path = settings.UPLOAD_DIR / job_id / temp_file_name
+            if temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as e:
+                    logger.warning(f"Failed to delete intermediate temp file {temp_file_path}: {e}")
+        
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                video_stream_url=f"/outputs/{job_id}/output.mp4",
+                dubbed_audio_path=str(translated_audio_path),
+                subtitle_path=str(vtt_path),
+                status=JobStatus.COMPLETED,
+                progress=100,
+                message="Dub complete!",
+            )
+    else:
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                status=JobStatus.MERGING,
+                progress=90,
+                message="Merging video and audio...",
+            )
+
+        output_path = settings.OUTPUT_DIR / job_id / "output.mp4"
+        await merge_video_audio(
+            video_path=video_path,
+            audio_path=dubbed_audio_path,
+            output_path=output_path,
+            preserve_background=preserve_background,
+            background_volume=background_volume,
         )
 
-    output_path = settings.OUTPUT_DIR / job_id / "output.mp4"
-    await merge_video_audio(
-        video_path=video_path,
-        audio_path=dubbed_audio_path,
-        output_path=output_path,
-        preserve_background=preserve_background,
-        background_volume=background_volume,
-    )
+        # Cleanup intermediate temp files to save space
+        for temp_file_name in ["audio.wav", "dubbed_audio.mp3", "video.mp4"]:
+            temp_file_path = settings.UPLOAD_DIR / job_id / temp_file_name
+            if temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception as e:
+                    logger.warning(f"Failed to delete intermediate temp file {temp_file_path}: {e}")
 
-    async with AsyncSessionLocal() as db:
-        await update_job(
-            db,
-            job_id,
-            video_stream_url=f"/outputs/{job_id}/output.mp4",
-            dubbed_audio_path=str(dubbed_audio_path),
-            subtitle_path=str(vtt_path),
-            status=JobStatus.COMPLETED,
-            progress=100,
-            message="Dub complete!",
-        )
+        async with AsyncSessionLocal() as db:
+            await update_job(
+                db,
+                job_id,
+                video_stream_url=f"/outputs/{job_id}/output.mp4",
+                dubbed_audio_path=str(dubbed_audio_path),
+                subtitle_path=str(vtt_path),
+                status=JobStatus.COMPLETED,
+                progress=100,
+                message="Dub complete!",
+            )
 
 
 def start_job(job_id: str):
