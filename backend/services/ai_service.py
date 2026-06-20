@@ -51,8 +51,8 @@ async def transcribe_and_translate_audio(
 ) -> Dict[str, Any]:
     """
     Transcribes and translates audio in one step using the gemini-3.1-flash-lite multimodal model.
-    Uploads the audio via Google GenAI Files API, processes it with a robust prompt,
-    and cleans up the uploaded file securely.
+    Routes requests through a custom Cloudflare Worker to bypass East Asia geo-restrictions
+    and safely streams large media payloads.
     """
     api_key = settings.GEMINI_API_KEY
     if not api_key:
@@ -60,9 +60,14 @@ async def transcribe_and_translate_audio(
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY missing from settings and environment.")
 
-    client = genai.Client(api_key=api_key)
+    CLOUDFLARE_PROXY_URL = "https://solitary-frog-c60a.saipraveenamujuri.workers.dev/"
+    
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(base_url=CLOUDFLARE_PROXY_URL)
+    )
 
-    logger.info(f"Uploading audio file {audio_path.name} to Gemini Files API...")
+    logger.info(f"Uploading audio file {audio_path.name} to Gemini Files API via Cloudflare Proxy...")
     audio_file = await asyncio.to_thread(client.files.upload, file=audio_path)
 
     LANGUAGE_NAMES = {
@@ -91,7 +96,7 @@ Return the result strictly as a JSON object matching the requested schema.
 """
 
     try:
-        logger.info("Generating content using gemini-3.1-flash-lite...")
+        logger.info("Generating content using gemini-3.1-flash-lite via proxy...")
 
         def _generate():
             return client.models.generate_content(
@@ -135,13 +140,12 @@ Return the result strictly as a JSON object matching the requested schema.
         }
 
     finally:
-        logger.info(f"Cleaning up uploaded audio file {audio_file.name} from Gemini storage...")
+        logger.info(f"Cleaning up uploaded audio file {audio_file.name} from Gemini storage via proxy...")
         try:
             await asyncio.to_thread(client.files.delete, name=audio_file.name)
             logger.info("Gemini file cleanup completed successfully.")
         except Exception as cleanup_err:
             logger.warning(f"Failed to delete file {audio_file.name}: {cleanup_err}")
-
 # -----------------------------
 # PIPER TTS
 # -----------------------------
