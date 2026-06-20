@@ -43,6 +43,9 @@ class TranscriptionTranslationResponse(BaseModel):
 # -----------------------------
 # MULTIMODAL TRANSCRIBE AND TRANSLATE
 # -----------------------------
+import base64
+import httpx
+import json
 
 async def transcribe_and_translate_audio(
     audio_path: Path,
@@ -50,35 +53,32 @@ async def transcribe_and_translate_audio(
     target_language: str = "en"
 ) -> Dict[str, Any]:
     """
-    Transcribes and translates audio in one step using the gemini-3.1-flash-lite multimodal model.
-    Routes requests through a custom Cloudflare Worker to bypass East Asia geo-restrictions
-    and safely streams large media payloads.
+    Transcribes and translates audio in one step using the Gemini 2.5 Flash Lite free model via OpenRouter.
+    Encodes raw audio file as Inline Base64 data to entirely bypass chunked file routing limits and regional geo-blocks.
     """
-    api_key = settings.GEMINI_API_KEY
+    # 1. Gather OpenRouter API Authentication Credentials
+    api_key = settings.GEMINI_API_KEY  # Or map a dedicated settings.OPENROUTER_API_KEY token variable
     if not api_key:
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY missing from settings and environment.")
+        raise RuntimeError("OpenRouter/Gemini API Key missing from configuration environment.")
 
-    CLOUDFLARE_PROXY_URL = "https://solitary-frog-c60a.saipraveenamujuri.workers.dev/"
-    
-    client = genai.Client(
-        api_key=api_key,
-        http_options=types.HttpOptions(base_url=CLOUDFLARE_PROXY_URL)
-    )
+    # 2. Extract extension format and convert your file track to a Base64 context string
+    file_extension = audio_path.suffix.lower().replace(".", "")
+    if file_extension not in ["wav", "mp3", "m4a", "aac", "ogg", "flac"]:
+        file_extension = "wav"  # Default fallback handling bounds
 
-    logger.info(f"Uploading audio file {audio_path.name} to Gemini Files API via Cloudflare Proxy...")
-    audio_file = await asyncio.to_thread(client.files.upload, file=audio_path)
+    logger.info(f"Encoding {audio_path.name} to base64 for OpenRouter pipeline...")
+    try:
+        audio_bytes = audio_path.read_bytes()
+        base64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+    except Exception as e:
+        logger.error(f"Failed to read/encode raw audio tracking files: {e}")
+        raise RuntimeError(f"Audio file conversion bottleneck: {e}")
 
     LANGUAGE_NAMES = {
-        "en": "English",
-        "hi": "Hindi",
-        "te": "Telugu",
-        "ta": "Tamil",
-        "ja": "Japanese",
-        "es": "Spanish",
-        "fr": "French",
-        "de": "German",
+        "en": "English", "hi": "Hindi", "te": "Telugu", "ta": "Tamil",
+        "ja": "Japanese", "es": "Spanish", "fr": "French", "de": "German"
     }
     target_language_name = LANGUAGE_NAMES.get(target_language, target_language)
 
@@ -92,37 +92,70 @@ Listen to the entire audio file provided and perform the following actions:
 5. Provide accurate start and end timestamps in seconds for each segment.
 
 Be extremely precise. The timestamps must align perfectly with the audio events.
-Return the result strictly as a JSON object matching the requested schema.
+Return the result strictly as a valid, single JSON object containing a "language" string and a "segments" array matching this exact schema:
+{{
+  "language": "string",
+  "segments": [
+     {{"id": 0, "start": 0.0, "end": 2.5, "text": "original text", "translated": "translated text"}}
+  ]
+}}
 """
 
+    # 3. Assemble standard OpenAI-compatible Multi-modal Payload Block targeting OpenRouter
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://praveenai.tech/echox",  # Optional: For OpenRouter ranking data tracking panels
+        "X-Title": "EchoX Desktop Workflow Engine"
+    }
+
+    # OpenRouter parses audio payloads seamlessly via standard user messages with content lists
+    payload = {
+        "model": "google/gemini-2.5-flash-lite:free",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "input_audio",
+                        "input_audio": {
+                            "data": base64_audio,
+                            "format": file_extension
+                        }
+                    }
+                ]
+            }
+        ],
+        "response_format": {"type": "json_object"},  # Enforces a valid json response layout format
+        "temperature": 0.2
+    }
+
     try:
-        logger.info("Generating content using gemini-3.1-flash-lite via proxy...")
+        logger.info("Forwarding translation data payload directly to OpenRouter API (google/gemini-2.5-flash-lite:free)...")
+        
+        # Increase connection timeouts to allow for file uploads and analytical generation tracking processing periods
+        async with httpx.AsyncClient(timeout=360.0) as http_client:
+            response = await http_client.post(url, headers=headers, json=payload)
+            
+            if response.status_code != 200:
+                logger.error(f"OpenRouter transaction failure: Status {response.status_code} - Context: {response.text}")
+                raise RuntimeError(f"OpenRouter API returned error state code {response.status_code}")
+                
+            response_data = response.json()
 
-        def _generate():
-            return client.models.generate_content(
-                model='gemini-3.1-flash-lite',
-                contents=[audio_file, prompt],
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=TranscriptionTranslationResponse,
-                    temperature=0.2,
-                )
-            )
-
-        response = await asyncio.to_thread(_generate)
-
-        import json
-        logger.info("Successfully received response from Gemini API.")
+        # 4. Extract generated model text text strings cleanly
+        raw_llm_text = response_data["choices"][0]["message"]["content"]
+        logger.info("Successfully received structural payload content back from OpenRouter.")
 
         try:
-            if response.text:
-                parsed_data = json.loads(response.text)
-            else:
-                raise ValueError("Response text is empty.")
+            parsed_data = json.loads(raw_llm_text)
         except Exception as parse_err:
-            logger.error(f"Failed to parse Gemini response text: {response.text}. Error: {parse_err}")
-            raise RuntimeError(f"JSON parsing error from Gemini model: {parse_err}")
+            logger.error(f"Failed to parse text payload from model response container: {raw_llm_text}. Error: {parse_err}")
+            raise RuntimeError(f"JSON parsing error from OpenRouter endpoint mapping: {parse_err}")
 
+        # 5. Normalize response properties to match your pipeline's downstream expectations
         segments = parsed_data.get("segments", [])
         formatted_segments = []
         for i, seg in enumerate(segments):
@@ -139,13 +172,9 @@ Return the result strictly as a JSON object matching the requested schema.
             "language": parsed_data.get("language", source_language or "en")
         }
 
-    finally:
-        logger.info(f"Cleaning up uploaded audio file {audio_file.name} from Gemini storage via proxy...")
-        try:
-            await asyncio.to_thread(client.files.delete, name=audio_file.name)
-            logger.info("Gemini file cleanup completed successfully.")
-        except Exception as cleanup_err:
-            logger.warning(f"Failed to delete file {audio_file.name}: {cleanup_err}")
+    except Exception as exc:
+        logger.error(f"Pipeline error encountered during execution loop: {exc}")
+        raise exc
 # -----------------------------
 # PIPER TTS
 # -----------------------------
