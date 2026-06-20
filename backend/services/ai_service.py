@@ -57,11 +57,14 @@ async def transcribe_and_translate_audio(
     Encodes raw audio file as Inline Base64 data to entirely bypass chunked file routing limits and regional geo-blocks.
     """
     # 1. Gather OpenRouter API Authentication Credentials
-    api_key = settings.GEMINI_API_KEY  # Or map a dedicated settings.OPENROUTER_API_KEY token variable
+    api_key = getattr(settings, "OPENROUTER_API_KEY", None) or os.environ.get("OPENROUTER_API_KEY")
+    
     if not api_key:
-        api_key = os.environ.get("OPENROUTER_API_KEY") or os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OpenRouter/Gemini API Key missing from configuration environment.")
+        # Fallback to check if it's stored under GEMINI_API_KEY in lingering cached files
+        api_key = getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY")
+
+    if not api_key or api_key == "":
+        raise RuntimeError("OpenRouter API Key (OPENROUTER_API_KEY) missing from active environment configuration pools.")
 
     # 2. Extract extension format and convert your file track to a Base64 context string
     file_extension = audio_path.suffix.lower().replace(".", "")
