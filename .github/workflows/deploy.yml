@@ -29,8 +29,10 @@ jobs:
             sudo docker system prune -f
             sudo docker builder prune -f
             
+            # 2. Update Environment Configuration
+
             echo "DEBUG=${{ secrets.DEBUG }}" > .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
             echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
             echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
             echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
