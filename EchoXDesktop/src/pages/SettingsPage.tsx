@@ -14,7 +14,7 @@ interface SettingsPageProps {
   historyCount: number;
 }
 
-export const BACKEND_URL = "https://echox-api.eastasia.cloudapp.azure.com";
+export const BACKEND_URL = "https://api.praveenai.tech";
 const MAX_UPLOAD_MB = 200;
 
 export function SettingsPage({

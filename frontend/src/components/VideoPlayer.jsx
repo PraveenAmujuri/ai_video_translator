@@ -10,7 +10,7 @@ export default function VideoPlayer({ videoUrl }) {
   // Build the clean streaming target string pointing directly to your Azure server build tree
   const finalMergedStreamTarget = videoUrl.startsWith("http")
     ? videoUrl
-    : `${import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"}${videoUrl}`;
+    : `${import.meta.env.VITE_API_BASE_URL || "https://api.praveenai.tech"}${videoUrl}`;
 
   return (
     <ShineBorder

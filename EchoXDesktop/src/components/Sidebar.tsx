@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
+import { BACKEND_URL } from "../pages/SettingsPage";
 
 export type SidebarPage = "home" | "history" | "sources" | "settings" | "website" | "support" | "about";
-import { BACKEND_URL } from "../pages/SettingsPage"; // Adjust the relative path if necessary based on your folder depth
 interface SidebarItem {
   id: SidebarPage;
   label: string;

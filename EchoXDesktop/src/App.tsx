@@ -134,14 +134,14 @@ export default function App() {
     history,
   ]);
 
-  // Run engine update check once on mount; failures are non-fatal.
+  // Run engine lifecycle check once on mount; failures are non-fatal.
   const { appendLog } = actions;
   useEffect(() => {
     tauriUpdateExtractorEngine()
       .then((msg) => appendLog(`[Engine] ${msg}`))
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
-        appendLog(`[Engine] Update skipped: ${msg}`, "warn");
+        appendLog(`[Engine] ${msg}`, "warn");
       });
   }, [appendLog]);
 
@@ -329,7 +329,7 @@ export default function App() {
                     disabled={isActive}
                   />
 
-                  {((state.phase === "completed" && !endpoints) || state.phase === "error") && (
+                  {state.phase !== "idle" && (
                     <div className="area-actions">
                       <button
                         type="button"
@@ -375,33 +375,6 @@ export default function App() {
               {state.phase === "completed" && endpoints && (
                 <div className="area-output" style={{ width: "100%", marginBottom: "16px" }}>
                   <OutputPanel endpoints={endpoints} onSave={actions.saveOutput} />
-                  
-                  <div className="area-actions" style={{ marginTop: "14px" }}>
-                    <button
-                      type="button"
-                      onClick={actions.reset}
-                      className="btn btn--ghost"
-                    >
-                      <span className="btn-icon" aria-hidden="true">
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                          <path
-                            d="M3 8a5 5 0 1 1 1.4 3.5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                          <path
-                            d="M3 4v3.5H6.5"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </span>
-                      Start over
-                    </button>
-                  </div>
                 </div>
               )}
 

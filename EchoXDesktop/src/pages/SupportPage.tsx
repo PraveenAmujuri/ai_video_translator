@@ -169,5 +169,3 @@ export function SupportPage() {
     </div>
   );
 }
-// src/pages/SettingsPage.tsx
-export const BACKEND_URL = "https://echox-api.eastasia.cloudapp.azure.com";

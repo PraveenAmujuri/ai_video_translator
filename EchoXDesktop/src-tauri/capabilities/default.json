@@ -6,16 +6,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "dialog:default",
-    {
-      "identifier": "shell:allow-spawn",
-      "allow": [
-        {
-          "name": "yt-dlp",
-          "sidecar": true,
-          "args": true
-        }
-      ]
-    }
+    "dialog:default"
   ]
 }

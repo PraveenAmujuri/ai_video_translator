@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getVersion, getName, getTauriVersion } from "@tauri-apps/api/app";
 
-const BACKEND_HOST = "echox-api.eastasia.cloudapp.azure.com";
+const BACKEND_HOST = "api.praveenai.tech";
 const BACKEND_URL = `https://${BACKEND_HOST}`;
 
 function detectPlatform(): string {
