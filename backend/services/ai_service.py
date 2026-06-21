@@ -115,7 +115,7 @@ Return the result strictly as a valid, single JSON object containing a "language
 
     # OpenRouter parses audio payloads seamlessly via standard user messages with content lists
     payload = {
-        "model": "google/gemini-2.5-flash:free",
+        "model": "nvidia/nemotron-3-nano-omni",
         "messages": [
             {
                 "role": "user",
