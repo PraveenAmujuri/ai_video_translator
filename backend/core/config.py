@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     RAPIDAPI_KEY: str = "6fc3478855msh1e3d611ff4a4097p1b892ajsn45c27b1736eb"
     RAPIDAPI_HOST: str = "youtube-mp36.p.rapidapi.com"
     OPENROUTER_API_KEY: str = ""
+    GITHUB_TOKEN: str = ""
 
     DEFAULT_VOICE: str = "en-US-AriaNeural"
     TTS_RATE: str = "+0%"
