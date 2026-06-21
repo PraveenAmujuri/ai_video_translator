@@ -1,46 +1,51 @@
 name: Deploy EchoX with Docker and Nginx
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH Key
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.AZURE_VM_IP }}
-          username: ${{ secrets.AZURE_VM_USER }}
-          key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
-          script: |
-            # 1. Clone or pull down the project repository code
-            if [ ! -d "ai_video_translator" ]; then
-              git clone https://github.com/${{ github.repository }}.git ai_video_translator
-              cd ai_video_translator
-            else
-              cd ai_video_translator
-              git pull origin main
-            fi
+deploy:
+runs-on: ubuntu-latest
 
-            #clean up old images and build cache to free up space and ensure a clean slate for deployment
-            sudo docker system prune -f
-            sudo docker builder prune -f
-            
-            # 2. Update Environment Configuration
+steps:
+  - name: Deploy via SSH Key
+    uses: appleboy/ssh-action@v1.0.3
+    with:
+      host: ${{ secrets.AZURE_VM_IP }}
+      username: ${{ secrets.AZURE_VM_USER }}
+      key: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
 
-            echo "DEBUG=${{ secrets.DEBUG }}" > .env
-            echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
-            echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
-            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
-            echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
-            echo "WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}" >> .env
-            echo "WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}" >> .env
-            echo "RAPIDAPI_HOST=${{ secrets.RAPIDAPI_HOST }}" >> .env
-            echo "RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}" >> .env
-            
-            # 3. Handle Docker runtime execution safely
-            sudo docker-compose down
-            sudo docker-compose up -d --build
+      # Prevent timeout during slow Docker builds
+      command_timeout: 45m
+
+      script: |
+        # Clone or update repository
+        if [ ! -d "ai_video_translator" ]; then
+          git clone https://github.com/${{ github.repository }}.git ai_video_translator
+          cd ai_video_translator
+        else
+          cd ai_video_translator
+          git pull origin main
+        fi
+
+        # Create .env
+        echo "DEBUG=${{ secrets.DEBUG }}" > .env
+        echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
+        echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
+        echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+        echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
+        echo "WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}" >> .env
+        echo "WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}" >> .env
+        echo "RAPIDAPI_HOST=${{ secrets.RAPIDAPI_HOST }}" >> .env
+        echo "RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}" >> .env
+
+        # Stop existing containers
+        sudo docker-compose down
+
+        # Rebuild and start
+        sudo docker-compose up -d --build
+
+        # Remove dangling images only
+        sudo docker image prune -f
