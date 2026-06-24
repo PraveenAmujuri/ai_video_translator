@@ -22,9 +22,14 @@ const Button = ({
         cursor-pointer
         hover:bg-transparent hover:text-[#fec195] hover:shadow-[0_0_25px_#fec1958c]
         active:scale-95
+        /* FIX: Added Flexbox centering alignment and gap */
+        flex items-center justify-center gap-2
       "
     >
-      {children}
+      {/* FIX: Wrap children in a relative container to prevent flex-items overlapping star layers */}
+      <span className="relative z-10 flex items-center justify-center gap-2">
+        {children}
+      </span>
 
       {/* Star 1 */}
       <div

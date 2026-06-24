@@ -32,7 +32,8 @@ export default function App() {
       <HeroSection />
 
       {/* ───────────────── MAIN APP ──────────────── */}
-      <main className="
+      <main
+      className="
         relative
         z-20
         max-w-7xl
@@ -40,7 +41,30 @@ export default function App() {
         px-6
         py-20
         space-y-20
-      ">
+        overflow-hidden
+      "
+    >
+      {/* Grid Background */}
+      <div
+        className="
+          absolute
+          inset-0
+          -z-10
+          pointer-events-none
+          opacity-100
+        "
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(59,130,246,0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59,130,246,0.08) 1px, transparent 1px)
+          `,
+          backgroundSize: "64px 64px",
+          maskImage:
+            "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+        }}
+      />
 
         {/* ───────────────── CONFIGURATION CONTROLS ──────────────── */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -72,40 +96,41 @@ export default function App() {
         </section>
 
         {/* ───────────────── WORKSPACE ──────────────── */}
+        {/* FIX: Changed from grid-cols-[340px_1fr] to a clean single column layout */}
         <section className="
           grid
           grid-cols-1
-          xl:grid-cols-[340px_1fr]
-          gap-20
+          gap-14
           items-start
+          max-w-3xl
+          mx-auto
         ">
 
-          {/* ───────────────── LEFT SIDEBAR ──────────────── */}
-          <div className="space-y-14">
-            <div>
-              <ProgressTracker
-                jobId={jobId}
-                progress={progress}
-                setProgress={setProgress}
-                setStatus={setStatus}
-                setVideoUrl={setVideoUrl}
-                status={status}
-              />
-            </div>
+          {/* ───────────────── PROGRESS TRACKER (TOP) ──────────────── */}
+          <div className="w-full">
+            <ProgressTracker
+              jobId={jobId}
+              progress={progress}
+              setProgress={setProgress}
+              setStatus={setStatus}
+              setVideoUrl={setVideoUrl}
+              status={status}
+            />
           </div>
 
-          {/* ───────────────── VIDEO PREVIEW ──────────────── */}
-          <section className="relative min-h-[720px]">
+          {/* ───────────────── VIDEO PREVIEW (BOTTOM) ──────────────── */}
+          <section className="relative w-full">
             {/* Header */}
             <div className="
-              mb-8
+              mb-6
               flex
               items-center
               justify-between
             ">
               <div>
                 <h2 className="
-                  text-3xl
+                  text-2xl
+                  md:text-3xl
                   font-semibold
                   tracking-tight
                 ">
