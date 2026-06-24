@@ -54,8 +54,8 @@ export default function VoiceSelector({
       rounded-3xl
       p-6
 
-      bg-black/[0.02]
-      dark:bg-white/[0.02]
+      bg-white/60
+      dark:bg-black/30
 
       border
       border-black/10

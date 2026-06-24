@@ -63,8 +63,9 @@ export default function ShineBorder({
         className="
           relative
           rounded-[calc(var(--border-radius)-2px)]
-          bg-white
-          dark:bg-black
+          bg-white/60
+          dark:bg-black/30
+          backdrop-blur-xl
           text-black
           dark:text-white
         "

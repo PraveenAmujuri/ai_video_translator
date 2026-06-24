@@ -2,6 +2,7 @@ import { useTheme } from "../context/ThemeContext";
 import GLSLHills from "./ui/GLSLHills";
 import GooeyNav from "./ui/GooeyNav";
 import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
+import EchoXLogo from "./ui/EchoXLogo";
 
 export default function HeroSection() {
   const { isDark } = useTheme();
@@ -18,7 +19,7 @@ export default function HeroSection() {
       </div>
 
       {/* ── FIXED HEADER / NAVBAR ────────────────────────────── */}
-      <header className="fixed top-0 inset-x-0 w-full z-[9999] bg-transparent backdrop-blur-md transition-colors duration-300"
+      <header className="fixed top-0 inset-x-0 w-full z-[9999] bg-white/60 dark:bg-black/30 backdrop-blur-xl transition-colors duration-300"
         style={{
           borderBottom: isDark
             ? "1px solid rgba(255,255,255,0.04)"
@@ -28,21 +29,13 @@ export default function HeroSection() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
 
           {/* Brand */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <EchoXLogo isDark={isDark} size={40} />
             <span
               className="font-bold tracking-tight text-sm uppercase font-sans transition-colors duration-300"
               style={{ color: isDark ? "#ffffff" : "#000000" }}
             >
-              V_Matrix
-            </span>
-            <span
-              className="text-[9px] px-1.5 py-0.5 rounded-sm font-mono tracking-widest scale-90 transition-colors duration-300"
-              style={{
-                background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
-                color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.45)",
-              }}
-            >
-              v2.0
+              EchoX
             </span>
           </div>
 

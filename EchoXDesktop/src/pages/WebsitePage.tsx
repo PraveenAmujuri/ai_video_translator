@@ -2,7 +2,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 
 const WEBSITE_URL = "https://echox.praveenai.tech";
 const DOCS_URL = "https://echox.praveenai.tech/docs";
-const GITHUB_URL = "https://github.com/praveenai/echox";
+const GITHUB_URL = "https://github.com/PraveenAmujuri/ai_video_translator";
 
 function ExternalLinkIcon({ size = 14 }: { size?: number }) {
   return (
@@ -149,7 +149,7 @@ export function WebsitePage() {
           <LinkRow
             icon={<GithubIcon size={15} />}
             title="GitHub Repository"
-            meta="github.com/praveenai/echox"
+            meta="github.com/PraveenAmujuri/ai_video_translator"
             url={GITHUB_URL}
           />
         </div>

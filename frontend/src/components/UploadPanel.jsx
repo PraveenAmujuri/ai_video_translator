@@ -161,7 +161,7 @@ export default function UploadPanel({
         </div>
 
         <div
-          className={`relative overflow-hidden transition-all duration-300 rounded-[32px] border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/15 dark:hover:border-white/15 transition-all duration-300 ${
+          className={`relative overflow-hidden transition-all duration-300 rounded-[32px] border border-black/10 dark:border-white/10 bg-white/60 dark:bg-black/30 backdrop-blur-xl hover:border-black/15 dark:hover:border-white/15 transition-all duration-300 ${
             isUrlProcessing ? "opacity-40 cursor-not-allowed pointer-events-none" : "cursor-pointer"
           } ${isDragging && !isUrlProcessing ? "scale-[1.01] opacity-80" : ""}`}
           onDragOver={(e) => {
@@ -282,10 +282,11 @@ export default function UploadPanel({
             transition-all
             duration-500
             overflow-hidden
+            backdrop-blur-xl
             ${
               isUrlProcessing
                 ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.04] shadow-[0_0_15px_rgba(255,255,255,0.02)]"
-                : "border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] focus-within:border-black/20 dark:focus-within:border-white/20"
+                : "border-black/10 dark:border-white/10 bg-white/60 dark:bg-black/30 focus-within:border-black/20 dark:focus-within:border-white/20"
             }
           `}
         >

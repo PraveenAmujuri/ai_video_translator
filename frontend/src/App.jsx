@@ -93,6 +93,7 @@ export default function App() {
             opacity: isDark ? 0 : 1,
           }}
         />
+        
 
         {/* ───────────────── CONFIGURATION CONTROLS ──────────────── */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
