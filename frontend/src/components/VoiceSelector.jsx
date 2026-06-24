@@ -126,6 +126,7 @@ export default function VoiceSelector({
           <option
             key={v.name}
             value={v.name}
+            className="bg-white dark:bg-zinc-950 text-black dark:text-white"
           >
             {v.label}
           </option>

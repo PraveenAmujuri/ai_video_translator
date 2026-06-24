@@ -50,7 +50,8 @@ export default function VideoPlayer({ videoUrl }) {
                 mx-auto
                 h-auto
                 rounded-xl
-                bg-black
+                bg-neutral-100
+                dark:bg-zinc-950
                 transition-all
                 duration-300
 

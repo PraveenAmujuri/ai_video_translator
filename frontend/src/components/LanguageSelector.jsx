@@ -74,11 +74,11 @@ export default function LanguageSelector({
           appearance-none
         "
       >
-        <option value="en">English</option>
-        <option value="hi">Hindi</option>
-        <option value="te">Telugu</option>
-        <option value="ta">Tamil</option>
-        <option value="ja">Japanese</option>
+        <option value="en" className="bg-white dark:bg-zinc-950 text-black dark:text-white">English</option>
+        <option value="hi" className="bg-white dark:bg-zinc-950 text-black dark:text-white">Hindi</option>
+        <option value="te" className="bg-white dark:bg-zinc-950 text-black dark:text-white">Telugu</option>
+        <option value="ta" className="bg-white dark:bg-zinc-950 text-black dark:text-white">Tamil</option>
+        <option value="ja" className="bg-white dark:bg-zinc-950 text-black dark:text-white">Japanese</option>
       </select>
     </div>
   );

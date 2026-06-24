@@ -1,25 +1,10 @@
-"use client";
-import { useState, useEffect } from "react";
+import { useTheme } from "../context/ThemeContext";
 import GLSLHills from "./ui/GLSLHills";
 import GooeyNav from "./ui/GooeyNav";
 import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
 
 export default function HeroSection() {
-  // Track isDark as React state so GLSLHills re-renders when theme changes
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains("dark")
-  );
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-    return () => observer.disconnect();
-  }, []);
+  const { isDark } = useTheme();
 
   return (
     <section

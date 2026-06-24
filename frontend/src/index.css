@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 body {
   margin: 0;
-  background: #020617;
-  color: white;
+  background: white;
+  color: black;
   font-family: Inter, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+html.dark body {
+  background: #000000;
+  color: white;
 }
 @keyframes shine {
   0% {

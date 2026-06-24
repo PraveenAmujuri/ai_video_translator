@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "../context/ThemeContext";
 import api from "../services/api";
 
 const ACCENT = "#FF8C00"; // Rich orange accent
@@ -6,42 +7,42 @@ const ACCENT_SOFT = "rgba(255, 140, 0, 0.75)";
 
 const STATUS_COLOR = {
   completed: {
-    text: "text-zinc-100 font-semibold drop-shadow-[0_0_6px_rgba(255,140,0,0.15)]",
+    text: "text-zinc-800 dark:text-zinc-100 font-semibold drop-shadow-[0_0_6px_rgba(255,140,0,0.15)]",
     dot: "bg-[#FF8C00]",
     glow: "rgba(255,140,0,0.4)",
     hex: "#FF8C00",
     barBg: "linear-gradient(90deg, #fec195, #FF8C00)",
   },
   failed: {
-    text: "text-rose-400",
-    dot: "bg-rose-400",
+    text: "text-rose-600 dark:text-rose-400",
+    dot: "bg-rose-600 dark:bg-rose-400",
     glow: "rgba(251,113,133,0.45)",
     hex: "#fb7185",
     barBg: "linear-gradient(90deg, #f43f5e, #fb7185)",
   },
   transcribing: {
-    text: "text-amber-200/90",
-    dot: "bg-amber-400/80",
+    text: "text-amber-600 dark:text-amber-200/90",
+    dot: "bg-amber-500 dark:bg-amber-400/80",
     glow: "rgba(252,211,77,0.25)",
     hex: "#fde68a",
     barBg: `linear-gradient(90deg, rgba(255,140,0,0.4), var(--accent-soft))`,
   },
   translating: {
-    text: "text-orange-200/90",
-    dot: "bg-orange-400/80",
+    text: "text-orange-600 dark:text-orange-200/90",
+    dot: "bg-orange-500 dark:bg-orange-400/80",
     glow: "rgba(251,146,60,0.25)",
     hex: "#fed7aa",
     barBg: `linear-gradient(90deg, rgba(255,140,0,0.4), var(--accent-soft))`,
   },
   generating_tts: {
-    text: "text-orange-100",
-    dot: "bg-orange-300",
+    text: "text-orange-700 dark:text-orange-100",
+    dot: "bg-orange-400 dark:bg-orange-300",
     glow: "rgba(253,186,116,0.3)",
     hex: "#ffedd5",
     barBg: `linear-gradient(90deg, rgba(255,140,0,0.5), var(--accent-soft))`,
   },
   default: {
-    text: "text-slate-400",
+    text: "text-slate-600 dark:text-slate-400",
     dot: "bg-slate-500",
     glow: "rgba(255,255,255,0.05)",
     hex: "#94a3b8",
@@ -88,6 +89,7 @@ export default function ProgressTracker({
   setVideoUrl,
   status,
 }) {
+  const { isDark } = useTheme();
   const [message, setMessage] = useState("Waiting...");
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
@@ -227,9 +229,9 @@ export default function ProgressTracker({
               <>
                 {THINKING_WORDS[wordIndex]}
                 {message ? (
-                  <span className="text-white/35 font-normal"> — {message}</span>
+                  <span className="text-black/40 dark:text-white/35 font-normal"> — {message}</span>
                 ) : (
-                  <span className="text-white/35 font-normal">…</span>
+                  <span className="text-black/40 dark:text-white/35 font-normal">…</span>
                 )}
               </>
             ) : (
@@ -241,16 +243,16 @@ export default function ProgressTracker({
         {/* PROGRESS BAR */}
         <div className="cascade-item mt-8">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-white/55 text-sm font-medium">
+            <span className="text-black/55 dark:text-white/55 text-sm font-medium">
               Translation Progress
             </span>
-            <span className="text-white font-semibold tracking-wider tabular-nums">
+            <span className="text-black dark:text-white font-semibold tracking-wider tabular-nums">
               {progress}%
             </span>
           </div>
 
           <div
-            className="relative h-[3px] w-full bg-white/5 overflow-hidden rounded-full"
+            className="relative h-[3px] w-full bg-black/5 dark:bg-white/5 overflow-hidden rounded-full"
             role="progressbar"
             aria-valuenow={progress}
             aria-valuemin={0}
@@ -283,11 +285,11 @@ export default function ProgressTracker({
                 <span
                   tabIndex={0}
                   className={`lift-on-hover rounded-md px-1 -mx-1 text-xs md:text-sm font-semibold tracking-wider shrink-0 outline-none
-                    focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                    focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-black
                     transition-colors duration-300 ${
                       isStepActive
-                        ? "text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
-                        : "text-white/25"
+                        ? "text-black dark:text-white dark:drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]"
+                        : "text-black/25 dark:text-white/25"
                     }`}
                   style={isStepActive ? { "--tw-ring-color": ACCENT } : undefined}
                 >
@@ -298,7 +300,7 @@ export default function ProgressTracker({
                   <div className="flex-1 flex items-center min-w-[24px] pr-1">
                     <div
                       className={`h-[2px] flex-1 rounded-full transition-all duration-500 ${
-                        isNextStepActive ? "connector-active" : "bg-white/5"
+                        isNextStepActive ? "connector-active" : "bg-black/5 dark:bg-white/5"
                       }`}
                       style={
                         isNextStepActive
@@ -319,7 +321,7 @@ export default function ProgressTracker({
                       strokeLinejoin="round"
                       className="w-3 h-3 -ml-1 transition-all duration-500 shrink-0"
                       style={{
-                        color: isNextStepActive ? ACCENT : "rgba(255,255,255,0.05)",
+                        color: isNextStepActive ? ACCENT : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
                         filter: isNextStepActive ? `drop-shadow(0 0 5px ${ACCENT_SOFT})` : "none",
                       }}
                     >

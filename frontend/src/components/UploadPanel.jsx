@@ -161,7 +161,7 @@ export default function UploadPanel({
         </div>
 
         <div
-          className={`relative overflow-hidden transition-all duration-300 rounded-[32px] ${
+          className={`relative overflow-hidden transition-all duration-300 rounded-[32px] border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/15 dark:hover:border-white/15 transition-all duration-300 ${
             isUrlProcessing ? "opacity-40 cursor-not-allowed pointer-events-none" : "cursor-pointer"
           } ${isDragging && !isUrlProcessing ? "scale-[1.01] opacity-80" : ""}`}
           onDragOver={(e) => {
@@ -260,10 +260,10 @@ export default function UploadPanel({
       {/* URL Section */}
       <div className="w-full max-w-3xl mx-auto">
         <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-black dark:text-white">
             Import From URL
           </h2>
-          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-black/50 dark:text-white/40">
             Paste a YouTube link to instantly extract and process its content.
           </p>
         </div>
@@ -284,14 +284,14 @@ export default function UploadPanel({
             overflow-hidden
             ${
               isUrlProcessing
-                ? "border-zinc-300 dark:border-zinc-700 bg-zinc-100/40 dark:bg-zinc-900/40 shadow-[0_0_15px_rgba(255,255,255,0.02)]"
-                : "border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/30 focus-within:border-zinc-400 dark:focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-400/20"
+                ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.04] shadow-[0_0_15px_rgba(255,255,255,0.02)]"
+                : "border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] focus-within:border-black/20 dark:focus-within:border-white/20"
             }
           `}
         >
           {/* Subtle Premium Overlay Light Track */}
           {isUrlProcessing && (
-            <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-r from-transparent via-zinc-400/5 dark:via-zinc-100/5 to-transparent animate-[premiumShimmer_3s_infinite_linear]" style={{ backgroundSize: '200% 100%' }} />
+            <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-r from-transparent via-white/5 dark:via-white/5 to-transparent animate-[premiumShimmer_3s_infinite_linear]" style={{ backgroundSize: '200% 100%' }} />
           )}
 
           {/* Input Field */}
@@ -306,12 +306,12 @@ export default function UploadPanel({
               h-12 
               px-4 
               bg-transparent 
-              text-zinc-900 
-              dark:text-zinc-100 
+              text-black 
+              dark:text-white 
               text-sm 
               outline-none 
-              placeholder:text-zinc-400 
-              dark:placeholder:text-zinc-500
+              placeholder:text-black/35 
+              dark:placeholder:text-white/35
               disabled:opacity-40
               disabled:cursor-not-allowed
               z-20

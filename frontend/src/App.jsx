@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "./context/ThemeContext";
 
 import UploadPanel from "./components/UploadPanel";
 import VideoPlayer from "./components/VideoPlayer";
@@ -8,6 +9,7 @@ import VoiceSelector from "./components/VoiceSelector";
 import HeroSection from "./components/HeroSection";
 
 export default function App() {
+  const { isDark } = useTheme();
   const [jobId, setJobId] = useState(null);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("idle");
@@ -24,7 +26,7 @@ export default function App() {
         duration-300
         bg-white
         text-black
-        dark:bg-[#000000]  {/* Changed from #050505 to match Hero pure black */}
+        dark:bg-[#000000]
         dark:text-white
       "
     >
@@ -33,38 +35,64 @@ export default function App() {
 
       {/* ───────────────── MAIN APP ──────────────── */}
       <main
-      className="
-        relative
-        z-20
-        max-w-7xl
-        mx-auto
-        px-6
-        py-20
-        space-y-20
-        overflow-hidden
-      "
-    >
-      {/* Grid Background */}
-      <div
         className="
-          absolute
-          inset-0
-          -z-10
-          pointer-events-none
-          opacity-100
+          relative
+          z-20
+          max-w-7xl
+          mx-auto
+          px-6
+          py-20
+          space-y-20
+          overflow-hidden
         "
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(59,130,246,0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(59,130,246,0.08) 1px, transparent 1px)
-          `,
-          backgroundSize: "64px 64px",
-          maskImage:
-            "radial-gradient(ellipse at center, black 40%, transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, black 40%, transparent 100%)",
-        }}
-      />
+      >
+        {/* Grid Background - Dark Mode */}
+        <div
+          className="
+            absolute
+            inset-0
+            -z-10
+            pointer-events-none
+            transition-opacity
+            duration-500
+          "
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px)
+            `,
+            backgroundSize: "64px 64px",
+            maskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+            opacity: isDark ? 1 : 0,
+          }}
+        />
+
+        {/* Grid Background - Light Mode */}
+        <div
+          className="
+            absolute
+            inset-0
+            -z-10
+            pointer-events-none
+            transition-opacity
+            duration-500
+          "
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px)
+            `,
+            backgroundSize: "64px 64px",
+            maskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse at center, black 40%, transparent 100%)",
+            opacity: isDark ? 0 : 1,
+          }}
+        />
 
         {/* ───────────────── CONFIGURATION CONTROLS ──────────────── */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-10">

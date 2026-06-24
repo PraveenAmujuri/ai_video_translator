@@ -20,7 +20,18 @@ const Button = ({
         shadow-[0_0_0_#fec1958c]
         transition-all duration-300 ease-in-out
         cursor-pointer
-        hover:bg-transparent hover:text-[#fec195] hover:shadow-[0_0_25px_#fec1958c]
+        hover:bg-transparent
+        
+        /* Light Mode Hover Styles */
+        hover:text-neutral-900
+        hover:border-neutral-900
+        hover:shadow-[0_0_25px_rgba(0,0,0,0.1)]
+        
+        /* Dark Mode Hover Styles */
+        dark:hover:text-[#fec195]
+        dark:hover:border-[#fec195]
+        dark:hover:shadow-[0_0_25px_#fec1958c]
+        
         active:scale-95
         /* FIX: Added Flexbox centering alignment and gap */
         flex items-center justify-center gap-2
