@@ -9,7 +9,8 @@ const GooeyNav = ({
   particleR = 100,
   timeVariance = 300,
   colors = [1, 2, 3, 1, 2, 3, 1, 4],
-  initialActiveIndex = 0
+  initialActiveIndex = 0,
+  onItemClick
 }) => {
   const containerRef = useRef(null);
   const navRef = useRef(null);
@@ -97,7 +98,9 @@ const GooeyNav = ({
   };
 
   const handleClick = (e, index) => {
+    if (e && e.preventDefault) e.preventDefault();
     const liEl = e.currentTarget;
+    if (onItemClick) onItemClick(items[index], index);
     if (activeIndex === index) return;
 
     setActiveIndex(index);

@@ -1,0 +1,40 @@
+<svg width="350" height="900" viewBox="0 0 350 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#d8d8d8"/>
+      <stop offset="40%" stop-color="#eeeeee"/>
+      <stop offset="60%" stop-color="#8a8a8a"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#5e5e5e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- TOP HALF: Monochrome Chrome Card -->
+  <g>
+    <rect x="0" y="0" width="350" height="450" fill="url(#chrome)"/>
+    <rect x="10" y="10" width="330" height="430" rx="12" fill="none" stroke="#222222" stroke-width="1.5" stroke-opacity="0.4"/>
+    <g transform="translate(100, 150)">
+      <circle cx="75" cy="75" r="60" fill="#222222"/>
+      <circle cx="50" cy="75" r="10" fill="url(#chrome)"/>
+      <circle cx="100" cy="75" r="10" fill="url(#chrome)"/>
+      <path d="M55,95 Q75,115 95,95" fill="none" stroke="url(#chrome)" stroke-width="6" stroke-linecap="round"/>
+      <line x1="75" y1="20" x2="95" y2="5" stroke="url(#chrome)" stroke-width="6"/>
+      <circle cx="95" cy="5" r="8" fill="url(#chrome)"/>
+    </g>
+  </g>
+
+  <!-- BOTTOM HALF: Brand Colored Card -->
+  <g>
+    <rect x="0" y="450" width="350" height="450" fill="#FF4500"/>
+    <rect x="10" y="460" width="330" height="430" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3"/>
+    <g transform="translate(100, 600)">
+      <circle cx="75" cy="75" r="60" fill="#FFFFFF"/>
+      <circle cx="50" cy="75" r="10" fill="#FF4500"/>
+      <circle cx="100" cy="75" r="10" fill="#FF4500"/>
+      <path d="M55,95 Q75,115 95,95" fill="none" stroke="#FF4500" stroke-width="6" stroke-linecap="round"/>
+      <line x1="75" y1="20" x2="95" y2="5" stroke="#FF4500" stroke-width="6"/>
+      <circle cx="95" cy="5" r="8" fill="#FF4500"/>
+    </g>
+  </g>
+</svg>

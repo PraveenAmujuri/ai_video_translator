@@ -1,0 +1,41 @@
+<svg width="350" height="900" viewBox="0 0 350 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#d8d8d8"/>
+      <stop offset="40%" stop-color="#eeeeee"/>
+      <stop offset="60%" stop-color="#8a8a8a"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#5e5e5e"/>
+    </linearGradient>
+    <radialGradient id="insta-grad" cx="30%" cy="100%" r="130%">
+      <stop offset="0%" stop-color="#fdf497"/>
+      <stop offset="5%" stop-color="#fdf497"/>
+      <stop offset="45%" stop-color="#fd5949"/>
+      <stop offset="60%" stop-color="#d6249f"/>
+      <stop offset="90%" stop-color="#285AEB"/>
+    </radialGradient>
+  </defs>
+
+  <!-- TOP HALF: Monochrome Chrome Card -->
+  <g>
+    <rect x="0" y="0" width="350" height="450" fill="url(#chrome)"/>
+    <rect x="10" y="10" width="330" height="430" rx="12" fill="none" stroke="#222222" stroke-width="1.5" stroke-opacity="0.4"/>
+    <g transform="translate(115, 165)">
+      <rect x="0" y="0" width="120" height="120" rx="35" fill="none" stroke="#222222" stroke-width="10"/>
+      <circle cx="60" cy="60" r="30" fill="none" stroke="#222222" stroke-width="10"/>
+      <circle cx="90" cy="30" r="8" fill="#222222"/>
+    </g>
+  </g>
+
+  <!-- BOTTOM HALF: Brand Colored Card -->
+  <g>
+    <rect x="0" y="450" width="350" height="450" fill="url(#insta-grad)"/>
+    <rect x="10" y="460" width="330" height="430" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3"/>
+    <g transform="translate(115, 615)">
+      <rect x="0" y="0" width="120" height="120" rx="35" fill="none" stroke="#FFFFFF" stroke-width="10"/>
+      <circle cx="60" cy="60" r="30" fill="none" stroke="#FFFFFF" stroke-width="10"/>
+      <circle cx="90" cy="30" r="8" fill="#FFFFFF"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+<svg width="350" height="900" viewBox="0 0 350 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#d8d8d8"/>
+      <stop offset="40%" stop-color="#eeeeee"/>
+      <stop offset="60%" stop-color="#8a8a8a"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#5e5e5e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- TOP HALF: Monochrome Chrome Card -->
+  <g>
+    <rect x="0" y="0" width="350" height="450" fill="url(#chrome)"/>
+    <rect x="10" y="10" width="330" height="430" rx="12" fill="none" stroke="#222222" stroke-width="1.5" stroke-opacity="0.4"/>
+    <g transform="translate(90, 175)">
+      <path d="M30,50 C30,35 45,25 60,25 C75,25 85,35 85,50 C95,50 110,60 110,75 C110,90 95,100 85,100 L30,100 Z" fill="#222222"/>
+      <rect x="0" y="60" width="4" height="40" rx="2" fill="#222222"/>
+      <rect x="6" y="50" width="4" height="50" rx="2" fill="#222222"/>
+      <rect x="12" y="40" width="4" height="60" rx="2" fill="#222222"/>
+      <rect x="18" y="45" width="4" height="55" rx="2" fill="#222222"/>
+      <rect x="24" y="55" width="4" height="45" rx="2" fill="#222222"/>
+    </g>
+  </g>
+
+  <!-- BOTTOM HALF: Brand Colored Card -->
+  <g>
+    <rect x="0" y="450" width="350" height="450" fill="#FF5500"/>
+    <rect x="10" y="460" width="330" height="430" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3"/>
+    <g transform="translate(90, 625)">
+      <path d="M30,50 C30,35 45,25 60,25 C75,25 85,35 85,50 C95,50 110,60 110,75 C110,90 95,100 85,100 L30,100 Z" fill="#FFFFFF"/>
+      <rect x="0" y="60" width="4" height="40" rx="2" fill="#FFFFFF"/>
+      <rect x="6" y="50" width="4" height="50" rx="2" fill="#FFFFFF"/>
+      <rect x="12" y="40" width="4" height="60" rx="2" fill="#FFFFFF"/>
+      <rect x="18" y="45" width="4" height="55" rx="2" fill="#FFFFFF"/>
+      <rect x="24" y="55" width="4" height="45" rx="2" fill="#FFFFFF"/>
+    </g>
+  </g>
+</svg>

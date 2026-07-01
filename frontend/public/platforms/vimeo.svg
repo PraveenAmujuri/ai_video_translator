@@ -1,0 +1,30 @@
+<svg width="350" height="900" viewBox="0 0 350 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#d8d8d8"/>
+      <stop offset="40%" stop-color="#eeeeee"/>
+      <stop offset="60%" stop-color="#8a8a8a"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#5e5e5e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- TOP HALF: Monochrome Chrome Card -->
+  <g>
+    <rect x="0" y="0" width="350" height="450" fill="url(#chrome)"/>
+    <rect x="10" y="10" width="330" height="430" rx="12" fill="none" stroke="#222222" stroke-width="1.5" stroke-opacity="0.4"/>
+    <g transform="translate(100, 160)">
+      <path d="M10,10 L50,110 L90,30 L110,30 L60,130 L40,130 L0,10 Z" fill="#222222"/>
+    </g>
+  </g>
+
+  <!-- BOTTOM HALF: Brand Colored Card -->
+  <g>
+    <rect x="0" y="450" width="350" height="450" fill="#1AB7EA"/>
+    <rect x="10" y="460" width="330" height="430" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3"/>
+    <g transform="translate(100, 610)">
+      <path d="M10,10 L50,110 L90,30 L110,30 L60,130 L40,130 L0,10 Z" fill="#FFFFFF"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,32 @@
+<svg width="350" height="900" viewBox="0 0 350 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#d8d8d8"/>
+      <stop offset="40%" stop-color="#eeeeee"/>
+      <stop offset="60%" stop-color="#8a8a8a"/>
+      <stop offset="80%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#5e5e5e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- TOP HALF: Monochrome Chrome Card -->
+  <g>
+    <rect x="0" y="0" width="350" height="450" fill="url(#chrome)"/>
+    <rect x="10" y="10" width="330" height="430" rx="12" fill="none" stroke="#222222" stroke-width="1.5" stroke-opacity="0.4"/>
+    <g transform="translate(110, 160)">
+      <path d="M80 0h20v80a30 30 0 1 1-30-30v20a10 10 0 1 0 10 10V40c-15 0-30-10-30-25V0h20c0 10 10 20 20 20V0z" fill="#222222"/>
+    </g>
+  </g>
+
+  <!-- BOTTOM HALF: Brand Colored Card -->
+  <g>
+    <rect x="0" y="450" width="350" height="450" fill="#010101"/>
+    <rect x="10" y="460" width="330" height="430" rx="12" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-opacity="0.3"/>
+    <g transform="translate(110, 610)">
+      <path d="M80 0h20v80a30 30 0 1 1-30-30v20a10 10 0 1 0 10 10V40c-15 0-30-10-30-25V0h20c0 10 10 20 20 20V0z" fill="#FFFFFF"/>
+      <path d="M78 -2h20v80a30 30 0 1 1-30-30v20a10 10 0 1 0 10 10V38c-15 0-30-10-30-25V-2h20c0 10 10 20 20 20V-2z" fill="#00f2fe" style="mix-blend-mode: screen;"/>
+      <path d="M82 2h20v80a30 30 0 1 1-30-30v20a10 10 0 1 0 10 10V42c-15 0-30-10-30-25V2h20c0 10 10 20 20 20V2z" fill="#fe2c55" style="mix-blend-mode: screen;"/>
+    </g>
+  </g>
+</svg>
