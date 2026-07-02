@@ -3,7 +3,7 @@ import { useTheme } from "../context/ThemeContext";
 import { CheckCircle2, AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import Button from "../components/ui/ShinyButton";
+import PixelBlast from "../components/ui/PixelBlast";
 
 export default function FeedbackPage({ type }) {
   const { isDark } = useTheme();
@@ -63,199 +63,232 @@ export default function FeedbackPage({ type }) {
 
   return (
     <div
-      className="min-h-screen py-24 px-6 flex flex-col justify-center items-center relative overflow-hidden transition-colors duration-300"
+      className="min-h-[calc(100vh-80px)] w-full flex flex-col md:flex-row relative transition-colors duration-300 pt-24 pb-12 overflow-x-hidden"
       style={{ background: isDark ? "#000000" : "#f8fafc" }}
     >
-      {/* Background radial glow */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1440px] h-[500px] pointer-events-none z-0"
-        style={{
-          background: isDark
-            ? "radial-gradient(ellipse 50% 60% at 50% 0%, rgba(249, 115, 22, 0.05) 0%, rgba(249, 115, 22, 0) 100%)"
-            : "radial-gradient(ellipse 50% 60% at 50% 0%, rgba(249, 115, 22, 0.03) 0%, rgba(249, 115, 22, 0) 100%)",
-        }}
-      />
-
-      <div className="w-full max-w-lg z-10">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm font-medium mb-8 transition-opacity hover:opacity-80"
-          style={{ color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)" }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[32px] border p-8 md:p-10 backdrop-blur-xl transition-all duration-300"
+      {/* LEFT COLUMN - PixelBlast Interactive Canvas Card */}
+      <div className="w-full md:w-[45%] lg:w-[50%] p-4 flex flex-col justify-stretch md:min-h-[460px]">
+        <div
+          className="relative flex-1 min-h-[300px] md:min-h-0 rounded-[24px] overflow-hidden transition-all duration-300"
           style={{
-            backgroundColor: isDark ? "rgba(13, 14, 16, 0.8)" : "#ffffff",
-            borderColor: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.07)",
-            boxShadow: isDark
-              ? "0 20px 40px -15px rgba(0,0,0,0.5)"
-              : "0 20px 40px -15px rgba(0,0,0,0.06)",
+            backgroundColor: isDark ? "#000000" : "#ffffff",
           }}
         >
+          {/* Halftone Canvas */}
+          <PixelBlast
+            color={isDark ? "#f97316" : "#ea580c"}
+            pixelSize={3}
+            patternScale={2}
+            patternDensity={1}
+            transparent={true}
+            liquid={false}
+            edgeFade={0.5}
+          />
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN - Centered Form Column */}
+      <div className="flex-1 w-full flex flex-col justify-center items-center p-4 md:p-6 lg:p-8 z-10">
+        <div className="w-full max-w-[420px] flex flex-col">
+          {/* Back button */}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-xs font-medium mb-5 transition-opacity hover:opacity-80"
+            style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.5)" }}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Home
+          </Link>
+
           {status === "success" ? (
-            <div className="text-center py-8">
-              <div className="flex justify-center mb-6">
-                <CheckCircle2 className="w-16 h-16 text-orange-500 animate-pulse" />
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="text-left"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <CheckCircle2 className="w-9 h-9 text-orange-500" />
+                <h2 className="text-xl font-bold tracking-tight" style={{ color: isDark ? "#ffffff" : "#08090a" }}>
+                  Thank you!
+                </h2>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight mb-3" style={{ color: isDark ? "#ffffff" : "#08090a" }}>
-                Feedback Submitted!
-              </h2>
-              <p className="text-sm leading-relaxed mb-8" style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>
-                Thank you for helping us improve EchoX. A confirmation email has been sent to your inbox.
+              <p className="text-xs leading-relaxed mb-6" style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>
+                We received your {typeLabel.toLowerCase()} and sent a confirmation email to your inbox. Your feedback helps us build a better translation experience.
               </p>
-              <Button onClick={() => setStatus("idle")} className="w-full">
-                Submit Another Response
-              </Button>
-            </div>
+              <button
+                onClick={() => setStatus("idle")}
+                className="w-full py-2.5 px-4 rounded-xl text-white font-semibold transition-all duration-200 text-xs shadow-md hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+                  boxShadow: "0 4px 20px -2px rgba(249, 115, 22, 0.4)",
+                }}
+              >
+                Submit another response
+              </button>
+            </motion.div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight mb-2" style={{ color: isDark ? "#ffffff" : "#08090a" }}>
-                  {typeLabel}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="mb-5">
+                <h1 className="text-2xl font-bold tracking-tight leading-tight mb-1.5" style={{ color: isDark ? "#ffffff" : "#08090a" }}>
+                  {isBug ? "Report an issue" : "Request a feature"}
                 </h1>
-                <p className="text-sm" style={{ color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}>
+                <p className="text-xs" style={{ color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)" }}>
                   {isBug
-                    ? "Found a bug or run exception? Describe it and we'll fix it."
-                    : "Have an idea or workflow expansion? Share your suggestions."}
+                    ? "Found a run exception or playback bug? Let us know."
+                    : "Have an expansion idea for EchoX? Detail it below."}
                 </p>
               </div>
 
               {status === "error" && (
                 <div
-                  className="p-4 rounded-xl border flex items-start gap-3 text-sm transition-all duration-300"
+                  className="p-3.5 mb-4 rounded-xl border flex items-start gap-3 text-xs transition-all duration-300"
                   style={{
                     backgroundColor: isDark ? "rgba(239, 68, 68, 0.05)" : "rgba(239, 68, 68, 0.02)",
-                    borderColor: "rgba(239, 68, 68, 0.2)",
+                    borderColor: "rgba(239, 68, 68, 0.15)",
                     color: isDark ? "#ef4444" : "#dc2626",
                   }}
                 >
-                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <div>{errorMsg}</div>
                 </div>
               )}
 
-              {/* Name */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
-                  Your Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500"
-                  style={{
-                    backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-                    color: isDark ? "#ffffff" : "#000000",
-                  }}
-                  disabled={status === "loading"}
-                />
-              </div>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name & Email side-by-side */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.48)" }}>
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 text-xs"
+                      style={{
+                        backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
+                        borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+                        color: isDark ? "#ffffff" : "#000000",
+                      }}
+                      disabled={status === "loading"}
+                    />
+                  </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500"
-                  style={{
-                    backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-                    color: isDark ? "#ffffff" : "#000000",
-                  }}
-                  disabled={status === "loading"}
-                />
-              </div>
+                  {/* Email */}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.48)" }}>
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 text-xs"
+                      style={{
+                        backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
+                        borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+                        color: isDark ? "#ffffff" : "#000000",
+                      }}
+                      disabled={status === "loading"}
+                    />
+                  </div>
+                </div>
 
-              {/* Title */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
-                  {isBug ? "Issue Title *" : "Feature Name *"}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={isBug ? "e.g. Video player crash on load" : "e.g. Cloud export integration"}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500"
-                  style={{
-                    backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-                    color: isDark ? "#ffffff" : "#000000",
-                  }}
-                  disabled={status === "loading"}
-                />
-              </div>
+                {/* Title */}
+                <div>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.48)" }}>
+                    {isBug ? "Issue Title" : "Feature Name"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={isBug ? "e.g. Export panel crash on 4K renders" : "e.g. YouTube translation history"}
+                    className="w-full px-3 py-2 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 text-xs placeholder:text-neutral-500"
+                    style={{
+                      backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
+                      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+                      color: isDark ? "#ffffff" : "#000000",
+                    }}
+                    disabled={status === "loading"}
+                  />
+                </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
-                  {isBug ? "What Happened? *" : "Describe the Feature *"}
-                </label>
-                <textarea
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={isBug ? "Describe the issue and what you expected to happen..." : "What goal will this feature accomplish?..."}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 min-h-[120px] resize-y"
-                  style={{
-                    backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-                    color: isDark ? "#ffffff" : "#000000",
-                  }}
-                  disabled={status === "loading"}
-                />
-              </div>
+                {/* Description */}
+                <div>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.48)" }}>
+                    {isBug ? "Description" : "Details"}
+                  </label>
+                  <textarea
+                    required
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={isBug ? "Provide a summary of the exception behavior..." : "Describe the functionality and what you want to accomplish..."}
+                    className="w-full px-3 py-2 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 min-h-[70px] max-h-[120px] resize-y text-xs placeholder:text-neutral-500"
+                    style={{
+                      backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
+                      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+                      color: isDark ? "#ffffff" : "#000000",
+                    }}
+                    disabled={status === "loading"}
+                  />
+                </div>
 
-              {/* Extra details (optional) */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)" }}>
-                  {isBug ? "Steps to Reproduce / System Info (Optional)" : "Use Cases / Notes (Optional)"}
-                </label>
-                <textarea
-                  value={extra}
-                  onChange={(e) => setExtra(e.target.value)}
-                  placeholder={isBug ? "1. Click Upload\n2. Select file X\n3. Console shows: ..." : "Specify how this would improve your workflow..."}
-                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 min-h-[100px] resize-y font-mono text-sm"
-                  style={{
-                    backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
-                    color: isDark ? "#ffffff" : "#000000",
-                  }}
-                  disabled={status === "loading"}
-                />
-              </div>
+                {/* Extra details (optional) */}
+                <div>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: isDark ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.48)" }}>
+                    {isBug ? "Steps to Reproduce (Optional)" : "Use Cases (Optional)"}
+                  </label>
+                  <textarea
+                    value={extra}
+                    onChange={(e) => setExtra(e.target.value)}
+                    placeholder={isBug ? "1. Click Upload...\n2. Run pipeline...\n3. Inspect logs..." : "How this addition helps your specific workflows..."}
+                    className="w-full px-3 py-2 rounded-xl border transition-all duration-200 focus:outline-none focus:border-orange-500 min-h-[60px] max-h-[100px] resize-y text-xs placeholder:text-neutral-500 font-mono"
+                    style={{
+                      backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.02)",
+                      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)",
+                      color: isDark ? "#ffffff" : "#000000",
+                    }}
+                    disabled={status === "loading"}
+                  />
+                </div>
 
-              <div className="pt-2">
-                <Button disabled={status === "loading"} className="w-full">
-                  {status === "loading" ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    `Submit ${typeLabel}`
-                  )}
-                </Button>
-              </div>
-            </form>
+                <div className="pt-1.5">
+                  <button
+                    type="submit"
+                    disabled={status === "loading"}
+                    className={`w-full py-2.5 px-4 rounded-xl font-semibold transition-all duration-300 text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border relative overflow-hidden group shadow-sm hover:scale-[1.01] active:scale-[0.99] ${
+                      isDark
+                        ? "text-zinc-300 hover:text-white border-orange-500/20 hover:border-orange-500 bg-white/[0.02] hover:bg-orange-500/[0.08] hover:shadow-[0_0_20px_-3px_rgba(249,115,22,0.3)]"
+                        : "text-zinc-700 hover:text-orange-600 border-orange-600/20 hover:border-orange-600 bg-black/[0.02] hover:bg-orange-600/[0.04] hover:shadow-[0_0_20px_-3px_rgba(234,88,12,0.15)]"
+                    }`}
+                  >
+                    {/* Shimmer reflection sweep */}
+                    <span className="absolute inset-y-0 -left-[150%] w-[50%] bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-25deg] transition-all duration-700 group-hover:left-[150%] ease-in-out pointer-events-none" />
+
+                    {status === "loading" ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Continue"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

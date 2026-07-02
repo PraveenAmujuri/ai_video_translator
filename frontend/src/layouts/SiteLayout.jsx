@@ -8,6 +8,7 @@ import { useTheme } from "../context/ThemeContext";
 export default function SiteLayout() {
   const { pathname } = useLocation();
   const { isDark } = useTheme();
+  const isFeedbackRoute = pathname === "/request-feature" || pathname === "/report-issue";
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
