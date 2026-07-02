@@ -4,6 +4,7 @@ import SiteLayout from "./layouts/SiteLayout";
 import HomePage from "./pages/HomePage";
 import FeaturesPage from "./pages/FeaturesPage";
 import DocsPage from "./pages/DocsPage";
+import FeedbackPage from "./pages/FeedbackPage";
 
 export default function App() {
   return (
@@ -12,9 +13,8 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/docs" element={<DocsPage />} />
-        {/* Future-ready */}
-        {/* <Route path="/support" element={<SupportPage />} /> */}
-        {/* <Route path="/request-feature" element={<RequestFeaturePage />} /> */}
+        <Route path="/request-feature" element={<FeedbackPage type="feature" />} />
+        <Route path="/report-issue" element={<FeedbackPage type="bug" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

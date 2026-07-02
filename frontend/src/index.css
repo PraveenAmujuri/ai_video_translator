@@ -23,3 +23,13 @@ html.dark body {
     transform: rotate(360deg);
   }
 }
+
+::selection {
+  background: rgba(253, 138, 44, 0.65);
+  color: inherit;
+}
+
+::-moz-selection {
+  background: rgba(253, 138, 44, 0.65);
+  color: inherit;
+}

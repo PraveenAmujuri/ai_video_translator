@@ -27,6 +27,8 @@ const COLS = [
     heading: "Company",
     links: [
       { label: "About", to: "/", external: false },
+      { label: "Request Feature", to: "/request-feature", external: false },
+      { label: "Report Issue", to: "/report-issue", external: false },
     ],
   },
 ];
@@ -114,9 +116,15 @@ export default function Footer() {
         <span className="text-[12px]" style={{ color: muted }}>
           © {new Date().getFullYear()} EchoX. All rights reserved.
         </span>
-        <span className="text-[12px]" style={{ color: muted }}>
-          Built with Tauri · Vite · React
-        </span>
+        <a
+          href="https://praveenai.tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[12px] hover:underline transition-opacity duration-200 hover:opacity-80"
+          style={{ color: muted }}
+        >
+          praveenai.tech
+        </a>
       </div>
     </footer>
   );
