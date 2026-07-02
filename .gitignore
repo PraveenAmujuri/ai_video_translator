@@ -83,3 +83,5 @@ node_modules/
 # Secrets
 secrets.json
 credentials.json
+
+.claude

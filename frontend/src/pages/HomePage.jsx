@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
+import { motion } from "framer-motion";
 
 import UploadPanel from "../components/UploadPanel";
 import VideoPlayer from "../components/VideoPlayer";
@@ -67,7 +68,13 @@ export default function HomePage() {
           }}
         />
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <motion.section 
+          className="grid grid-cols-1 md:grid-cols-2 gap-10"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div>
             <LanguageSelector language={language} setLanguage={setLanguage} />
           </div>
@@ -78,9 +85,14 @@ export default function HomePage() {
               targetLanguage={language}
             />
           </div>
-        </section>
+        </motion.section>
 
-        <section>
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
           <UploadPanel
             setJobId={setJobId}
             setStatus={setStatus}
@@ -88,9 +100,15 @@ export default function HomePage() {
             voice={voice}
             status={status}
           />
-        </section>
+        </motion.section>
 
-        <section className="grid grid-cols-1 gap-14 items-start max-w-3xl mx-auto">
+        <motion.section 
+          className="grid grid-cols-1 gap-14 items-start max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className="w-full">
             <ProgressTracker
               jobId={jobId}
@@ -122,7 +140,7 @@ export default function HomePage() {
               <VideoPlayer videoUrl={videoUrl} />
             </div>
           </section>
-        </section>
+        </motion.section>
       </main>
     </>
   );

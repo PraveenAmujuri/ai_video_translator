@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import { motion } from "framer-motion";
+import ScrollReveal from "../components/ui/ScrollReveal";
 import {
   ChevronRight,
   ExternalLink,
@@ -387,16 +388,22 @@ export default function DocsPage() {
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
                   {/* Section heading */}
-                  <h2
-                    className="text-[32px] md:text-[40px] leading-[1.1] font-light tracking-[-0.025em] mb-4"
+                  <div
                     style={{
                       color: isDark ? "#f7f8f8" : "#08090a",
                       fontFamily:
                         "'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif",
                     }}
                   >
-                    {c.heading}
-                  </h2>
+                    <ScrollReveal
+                      key={c.heading}
+                      containerClassName="!my-0 mb-4 text-[32px] md:text-[40px] font-light"
+                      textClassName="!text-inherit !font-inherit !leading-[1.1] !tracking-[-0.025em] !m-0"
+                      baseRotation={1}
+                    >
+                      {c.heading}
+                    </ScrollReveal>
+                  </div>
 
                   {c.body && (
                     <p
@@ -413,7 +420,14 @@ export default function DocsPage() {
 
                   {/* Subsections */}
                   {c.subsections?.map((sub, i) => (
-                    <div key={i} className="mb-10 last:mb-0">
+                    <motion.div
+                      key={i}
+                      className="mb-10 last:mb-0"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.1 }}
+                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    >
                       <h3
                         className="text-[20px] font-normal tracking-[-0.01em] mb-2"
                         style={{
@@ -467,7 +481,7 @@ export default function DocsPage() {
                           ))}
                         </ul>
                       )}
-                    </div>
+                    </motion.div>
                   ))}
 
                   {/* FAQs */}

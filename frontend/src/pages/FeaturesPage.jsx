@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useTheme } from "../context/ThemeContext";
 import CircularGallery from "../components/ui/CircularGallery";
 import CardSwap, { Card } from "../components/ui/CardSwap";
 import { motion } from "framer-motion";
+import ScrollReveal from "../components/ui/ScrollReveal";
 
 const PIPELINE_STEPS = [
   { label: 'Upload', desc: 'Source stream extraction' },
@@ -31,7 +33,7 @@ const UpcomingIcon = () => (
 
 function PipelineProgress({ activeStep }) {
   return (
-    <div className="flex flex-col gap-0 items-start text-left font-sans select-none max-w-[280px]">
+    <div className="flex flex-col gap-0 items-start text-left font-sans select-none max-w-[280px] pipeline-progress-themed">
       {PIPELINE_STEPS.map((step, idx) => {
         const isCompleted = idx < activeStep;
         const isActive = idx === activeStep;
@@ -119,6 +121,20 @@ body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, figure, blockquote, dl, dd {
 }
 
 :root {
+  /* Light mode variables by default */
+  --bg:        #ffffff;
+  --bg2:       #f8fafc;
+  --border:    rgba(0,0,0,0.06);
+  --border2:   rgba(0,0,0,0.1);
+  --t1:        #0f172a;
+  --t2:        rgba(15,23,42,0.65);
+  --t3:        rgba(15,23,42,0.4);
+  --font:      'Inter', system-ui, -apple-system, sans-serif;
+  --mono:      ui-monospace, 'Cascadia Code', monospace;
+}
+
+html.dark {
+  /* Dark mode overrides */
   --bg:        #08090a;
   --bg2:       #0d0e10;
   --border:    rgba(255,255,255,0.065);
@@ -126,8 +142,6 @@ body, h1, h2, h3, h4, h5, h6, p, ul, ol, li, figure, blockquote, dl, dd {
   --t1:        #ededeb;
   --t2:        rgba(237,237,235,0.48);
   --t3:        rgba(237,237,235,0.26);
-  --font:      'Inter', system-ui, -apple-system, sans-serif;
-  --mono:      ui-monospace, 'Cascadia Code', monospace;
 }
 
 html { background: var(--bg); scroll-behavior: smooth; }
@@ -629,6 +643,105 @@ body {
   .pixel-compare-th { padding: 8px; }
   .pixel-compare-td { padding: 12px 8px; }
 }
+
+/* Light mode specific overrides */
+html:not(.dark) .stage::before {
+    background:
+        radial-gradient(
+            ellipse 60% 75% at 50% 0%,
+            rgba(59, 130, 246, 0.05) 0%,
+            rgba(59, 130, 246, 0.01) 45%,
+            rgba(59, 130, 246, 0) 100%
+        ),
+        linear-gradient(
+            to bottom,
+            #f8fafc 0%,
+            #f1f5f9 35%,
+            #ffffff 65%,
+            rgba(255,255,255,0) 100%
+        );
+}
+html:not(.dark) .ss-frame {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.02),
+    0 20px 40px -10px rgba(0, 0, 0, 0.08),
+    0 40px 80px -20px rgba(0, 0, 0, 0.05);
+}
+html:not(.dark) .btn-ghost:hover {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+html:not(.dark) .hero-tag:hover {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+html:not(.dark) .compare-col-highlight {
+  background: rgba(0, 0, 0, 0.01) !important;
+}
+
+/* Themed CardSwap Cards in Light Mode */
+html:not(.dark) .swap-card-themed {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02) !important;
+}
+html:not(.dark) .swap-card-themed h3 {
+  color: #0f172a !important;
+}
+html:not(.dark) .swap-card-themed p {
+  color: rgba(15, 23, 42, 0.7) !important;
+}
+html:not(.dark) .swap-card-themed strong {
+  color: #0f172a !important;
+}
+html:not(.dark) .swap-card-themed span {
+  color: rgba(15, 23, 42, 0.5) !important;
+}
+html:not(.dark) .swap-card-themed svg {
+  stroke: rgba(15, 23, 42, 0.5) !important;
+}
+html:not(.dark) .swap-card-themed .border-t {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Themed PipelineProgress in Light Mode */
+html:not(.dark) .pipeline-progress-themed .text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) .pipeline-progress-themed .text-neutral-400 {
+  color: rgba(15, 23, 42, 0.8) !important;
+}
+html:not(.dark) .pipeline-progress-themed .text-neutral-500 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+html:not(.dark) .pipeline-progress-themed .text-neutral-600 {
+  color: rgba(15, 23, 42, 0.4) !important;
+}
+html:not(.dark) .pipeline-progress-themed .bg-neutral-800 {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+html:not(.dark) .pipeline-progress-themed svg.text-neutral-700 {
+  color: rgba(0, 0, 0, 0.2) !important;
+}
+html:not(.dark) .pipeline-progress-themed svg.text-neutral-400 {
+  color: rgba(15, 23, 42, 0.6) !important;
+}
+html:not(.dark) .pipeline-progress-themed svg.text-white {
+  color: #0f172a !important;
+}
+
+/* Placeholder support in Light Mode */
+html:not(.dark) .ss-ph {
+  background: #f8fafc !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+html:not(.dark) .ss-ph-lbl {
+  color: rgba(15,23,42,0.48) !important;
+}
+html:not(.dark) .ss-ph-note {
+  color: rgba(15,23,42,0.38) !important;
+}
 `;
 
 /* ─── Small helpers ──────────────────────────────────────────────── */
@@ -732,6 +845,7 @@ function depthOf(scale) {
 }
 
 function useScene3D(buildScene, { autoSpin = 0.09 } = {}) {
+  const { isDark } = useTheme();
   const wrapRef = useRef(null);
   const coreRefs = useRef([]);
   const glowRefs = useRef([]);
@@ -742,7 +856,7 @@ function useScene3D(buildScene, { autoSpin = 0.09 } = {}) {
   const raf = useRef(null);
   const t0 = useRef(performance.now());
 
-  const scene = useMemo(buildScene, []);
+  const scene = useMemo(() => buildScene(isDark), [buildScene, isDark]);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -831,7 +945,7 @@ function useScene3D(buildScene, { autoSpin = 0.09 } = {}) {
       el.removeEventListener("mousemove", onMove);
       el.removeEventListener("mouseleave", onLeave);
     };
-  }, [scene, autoSpin]);
+  }, [scene, autoSpin, isDark]);
 
   return { wrapRef, coreRefs, glowRefs, markerRefs, scene };
 }
@@ -880,7 +994,7 @@ function Scene3D({ buildScene, autoSpin, haloColors }) {
 }
 /* Double-helix speech waveform — source track + dubbed track, cross-synced,
    with word-timing "packets" traveling along the strand */
-function buildVoiceWaveform() {
+function buildVoiceWaveform(isDark = true) {
   const helixA = (t, time) => {
     const angle = t * Math.PI * 3.6 + time * 0.12;
     const y = (t - 0.5) * 175;
@@ -893,15 +1007,27 @@ function buildVoiceWaveform() {
     const a = helixA(tFixed, time), b = helixB(tFixed, time);
     return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
   };
-  const cool = { colorNear: [232, 238, 255], colorFar: [120, 130, 175] };
+  const cool = isDark 
+    ? { colorNear: [232, 238, 255], colorFar: [120, 130, 175] }
+    : { colorNear: [59, 130, 246], colorFar: [30, 64, 175] };
   const rungs = [];
   for (let i = 3; i < 20; i += 3) {
-    rungs.push({ samples: 1, fn: rungAt(i / 20), ...cool, colorNear: [190, 205, 255], colorFar: [90, 100, 150] });
+    const near = isDark ? [190, 205, 255] : [37, 99, 235];
+    const far = isDark ? [90, 100, 150] : [30, 58, 138];
+    rungs.push({ samples: 1, fn: rungAt(i / 20), ...cool, colorNear: near, colorFar: far });
   }
+  const markersA = isDark 
+    ? [{ speed: 0.18, phase: 0, size: 2.4, color: [200, 215, 255] }, { speed: 0.18, phase: 0.5, size: 1.8, color: [190, 205, 255] }]
+    : [{ speed: 0.18, phase: 0, size: 2.4, color: [37, 99, 235] }, { speed: 0.18, phase: 0.5, size: 1.8, color: [59, 130, 246] }];
+  const markersB = isDark
+    ? [{ speed: 0.15, phase: 0.25, size: 1.6, color: [170, 185, 240] }]
+    : [{ speed: 0.15, phase: 0.25, size: 1.6, color: [96, 165, 250] }];
+  const nearB = isDark ? [210, 218, 255] : [96, 165, 250];
+  const farB = isDark ? [95, 100, 150] : [30, 58, 138];
   return {
     curves: [
-      { samples: 64, fn: helixA, ...cool, markers: [{ speed: 0.18, phase: 0, size: 2.4, color: [200, 215, 255] }, { speed: 0.18, phase: 0.5, size: 1.8, color: [190, 205, 255] }] },
-      { samples: 64, fn: helixB, colorNear: [210, 218, 255], colorFar: [95, 100, 150], markers: [{ speed: 0.15, phase: 0.25, size: 1.6, color: [170, 185, 240] }] },
+      { samples: 64, fn: helixA, ...cool, markers: markersA },
+      { samples: 64, fn: helixB, colorNear: nearB, colorFar: farB, markers: markersB },
       ...rungs,
     ],
   };
@@ -909,7 +1035,7 @@ function buildVoiceWaveform() {
 
 /* Hub-and-spoke network — platform nodes curving into the app, orbiting
    gently, with an active job pulsing along the live link */
-function buildTranslationNetwork() {
+function buildTranslationNetwork(isDark = true) {
   const bases = [
     [70, -30, 10], [-60, -40, -20], [50, 40, -30], [-70, 20, 20],
     [10, -60, -40], [-20, 55, 35], [80, 15, -10], [-45, -55, 30],
@@ -930,11 +1056,20 @@ function buildTranslationNetwork() {
     };
     const fn = (t, time) => bezier3(center, mid(time), pos(time), t);
     const active = i === 0;
+    const near = isDark
+      ? (active ? [200, 220, 255] : [225, 228, 240])
+      : (active ? [37, 99, 235] : [71, 85, 105]);
+    const far = isDark
+      ? (active ? [90, 105, 170] : [95, 95, 105])
+      : (active ? [30, 58, 138] : [148, 163, 184]);
+    const markers = active
+      ? [{ speed: 0.3, phase: 0, size: 2.6, color: isDark ? [205, 220, 255] : [37, 99, 235] }]
+      : undefined;
     return {
       samples: 22, fn,
-      colorNear: active ? [200, 220, 255] : [225, 228, 240],
-      colorFar: active ? [90, 105, 170] : [95, 95, 105],
-      markers: active ? [{ speed: 0.3, phase: 0, size: 2.6, color: [205, 220, 255] }] : undefined,
+      colorNear: near,
+      colorFar: far,
+      markers,
     };
   });
   const ring = {
@@ -943,14 +1078,15 @@ function buildTranslationNetwork() {
       const a = t * Math.PI * 2 + time * 0.03;
       return [Math.cos(a) * 24, Math.sin(a * 2 + time * 0.2) * 3, Math.sin(a) * 24];
     },
-    colorNear: [210, 220, 250], colorFar: [70, 75, 100],
+    colorNear: isDark ? [210, 220, 250] : [37, 99, 235],
+    colorFar: isDark ? [70, 75, 100] : [148, 163, 184],
   };
   return { curves: [ring, ...curves] };
 }
 
 /* Layered compute stack — local hardware processing, with data packets
    rising through each stratum */
-function buildComputeStack() {
+function buildComputeStack(isDark = true) {
   const layers = 5;
   const layerPts = (l) => {
     const y = -80 + l * 40;
@@ -976,8 +1112,10 @@ function buildComputeStack() {
         const p0 = cornerPos(c0, l, time), p1 = cornerPos(c1, l, time);
         return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f, p0[2] + (p1[2] - p0[2]) * f];
       },
-      colorNear: l === layers - 1 ? [205, 220, 255] : [220, 224, 235],
-      colorFar: [80, 85, 100],
+      colorNear: isDark
+        ? (l === layers - 1 ? [205, 220, 255] : [220, 224, 235])
+        : (l === layers - 1 ? [37, 99, 235] : [71, 85, 105]),
+      colorFar: isDark ? [80, 85, 100] : [148, 163, 184],
     });
   }
   for (let c = 0; c < 4; c++) {
@@ -989,21 +1127,34 @@ function buildComputeStack() {
         const p0 = cornerPos(c, l0, time), p1 = cornerPos(c, l1, time);
         return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f, p0[2] + (p1[2] - p0[2]) * f];
       },
-      colorNear: [195, 210, 255], colorFar: [70, 75, 95],
-      markers: [{ speed: 0.22, phase: c * 0.25, size: 2, color: [200, 215, 255] }],
+      colorNear: isDark ? [195, 210, 255] : [59, 130, 246],
+      colorFar: isDark ? [70, 75, 95] : [148, 163, 184],
+      markers: [{ speed: 0.22, phase: c * 0.25, size: 2, color: isDark ? [200, 215, 255] : [37, 99, 235] }],
     });
   }
   return { curves };
 }
 
 function IllustrationLayers() {
-  return <Scene3D buildScene={buildVoiceWaveform} autoSpin={0.09} haloColors={["rgba(150,170,255,0.35)", "rgba(190,150,255,0.25)"]} />;
+  const { isDark } = useTheme();
+  const halos = isDark 
+    ? ["rgba(150,170,255,0.35)", "rgba(190,150,255,0.25)"]
+    : ["rgba(59,130,246,0.06)", "rgba(139,92,246,0.04)"];
+  return <Scene3D buildScene={buildVoiceWaveform} autoSpin={0.09} haloColors={halos} />;
 }
 function IllustrationNodes() {
-  return <Scene3D buildScene={buildTranslationNetwork} autoSpin={0.07} haloColors={["rgba(140,200,255,0.3)", "rgba(150,170,255,0.22)"]} />;
+  const { isDark } = useTheme();
+  const halos = isDark
+    ? ["rgba(140,200,255,0.3)", "rgba(150,170,255,0.22)"]
+    : ["rgba(59,130,246,0.06)", "rgba(139,92,246,0.04)"];
+  return <Scene3D buildScene={buildTranslationNetwork} autoSpin={0.07} haloColors={halos} />;
 }
 function IllustrationSpeed() {
-  return <Scene3D buildScene={buildComputeStack} autoSpin={0.08} haloColors={["rgba(200,210,255,0.3)", "rgba(150,180,255,0.2)"]} />;
+  const { isDark } = useTheme();
+  const halos = isDark
+    ? ["rgba(200,210,255,0.3)", "rgba(150,180,255,0.2)"]
+    : ["rgba(59,130,246,0.06)", "rgba(150,180,255,0.04)"];
+  return <Scene3D buildScene={buildComputeStack} autoSpin={0.08} haloColors={halos} />;
 }
 /* ─── Section label ───────────────────────────────────────────────── */
 function SectionNum({ n, name }) {
@@ -1144,9 +1295,12 @@ export default function EchoXFeaturesPage() {
             <div className="feat-header">
               <div className="feat-left">
                 <SectionNum n="1.0" name="Translate"/>
-                <h2 className="feat-h2" id="feat1-h">
-                  Transcribe audio.<br/>Generate voice tracks.<br/>Align subtitles.
-                </h2>
+                <ScrollReveal
+                  containerClassName="feat-h2 !my-0"
+                  textClassName="!text-inherit !font-inherit !leading-inherit !tracking-inherit !m-0"
+                >
+                  Transcribe audio. Generate voice tracks. Align subtitles.
+                </ScrollReveal>
               </div>
               <div className="feat-right">
                 <p className="feat-body">
@@ -1190,7 +1344,7 @@ export default function EchoXFeaturesPage() {
               height={300}
               onCardChange={setActiveCardIndex}
             >
-              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl">
+              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl swap-card-themed">
                 <div>
                   <div className="flex items-center gap-3 mb-4 text-neutral-400">
                     <svg className="w-5 h-5 stroke-neutral-500" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1208,7 +1362,7 @@ export default function EchoXFeaturesPage() {
                   <span>FFMPEG STREAM</span>
                 </div>
               </Card>
-              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl">
+              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl swap-card-themed">
                 <div>
                   <div className="flex items-center gap-3 mb-4 text-neutral-400">
                     <svg className="w-5 h-5 stroke-neutral-500" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1227,7 +1381,7 @@ export default function EchoXFeaturesPage() {
                   <span>AI MULTIMODAL</span>
                 </div>
               </Card>
-              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl">
+              <Card className="p-8 flex flex-col justify-between border-neutral-800 bg-[#0d0e10]/80 backdrop-blur-md text-[#ededeb] shadow-2xl rounded-xl swap-card-themed">
                 <div>
                   <div className="flex items-center gap-3 mb-4 text-neutral-400">
                     <svg className="w-5 h-5 stroke-neutral-500" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1258,9 +1412,12 @@ export default function EchoXFeaturesPage() {
             <div className="feat-header">
               <div className="feat-left">
                 <SectionNum n="2.0" name="Import"/>
-                <h2 className="feat-h2" id="feat2-h">
-                  Stream directly<br/>from the web.
-                </h2>
+                <ScrollReveal
+                  containerClassName="feat-h2 !my-0"
+                  textClassName="!text-inherit !font-inherit !leading-inherit !tracking-inherit !m-0"
+                >
+                  Stream directly from the web.
+                </ScrollReveal>
               </div>
               <div className="feat-right">
                 <p className="feat-body">
@@ -1275,8 +1432,8 @@ export default function EchoXFeaturesPage() {
           <div className="w-full max-w-[1200px] mx-auto h-[500px] relative overflow-hidden" style={{ marginTop: "56px" }}>
             <CircularGallery items={PLATFORM_ITEMS} bend={1} borderRadius={0.05} />
             {/* Smooth Edge Fades to blend cards as they curve out */}
-            <div className="absolute top-0 left-0 bottom-0 w-32 bg-gradient-to-r from-[#08090a] to-transparent pointer-events-none z-10" />
-            <div className="absolute top-0 right-0 bottom-0 w-32 bg-gradient-to-l from-[#08090a] to-transparent pointer-events-none z-10" />
+            <div className="absolute top-0 left-0 bottom-0 w-32 pointer-events-none z-10" style={{ background: 'linear-gradient(to right, var(--bg), transparent)' }} />
+            <div className="absolute top-0 right-0 bottom-0 w-32 pointer-events-none z-10" style={{ background: 'linear-gradient(to left, var(--bg), transparent)' }} />
           </div>
         </F>
       </section>
@@ -1288,9 +1445,12 @@ export default function EchoXFeaturesPage() {
             <div className="feat-header">
               <div className="feat-left">
                 <SectionNum n="3.0" name="Desktop"/>
-                <h2 className="feat-h2" id="feat3-h">
-                  Keep your history.<br/>Control your data.
-                </h2>
+                <ScrollReveal
+                  containerClassName="feat-h2 !my-0"
+                  textClassName="!text-inherit !font-inherit !leading-inherit !tracking-inherit !m-0"
+                >
+                  Keep your history. Control your data.
+                </ScrollReveal>
               </div>
               <div className="feat-right">
                 <p className="feat-body">
@@ -1341,7 +1501,12 @@ export default function EchoXFeaturesPage() {
 
           <F>
             <div className="pixel-compare-container">
-              <h2 className="pixel-compare-title">One product. Two ways to work.</h2>
+              <ScrollReveal
+                containerClassName="pixel-compare-title !my-0"
+                textClassName="!text-inherit !font-inherit !leading-inherit !tracking-inherit !m-0 text-center"
+              >
+                One product. Two ways to work.
+              </ScrollReveal>
               <p className="pixel-compare-subtitle">Cloud accessibility meets native local power.</p>
               <div className="pixel-compare-table-box">
                 <table className="pixel-compare-table">

@@ -1,8 +1,22 @@
+import { useState, useEffect } from "react";
 import { useTheme } from "../context/ThemeContext";
 import GLSLHills from "./ui/GLSLHills";
 
 export default function HeroSection() {
   const { isDark } = useTheme();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 40) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <section
@@ -73,6 +87,7 @@ export default function HeroSection() {
       : "linear-gradient(to bottom, transparent, #ffffff)",
   }}
 />
+
     </section>
   );
 }
