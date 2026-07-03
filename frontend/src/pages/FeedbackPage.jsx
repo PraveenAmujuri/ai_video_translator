@@ -67,9 +67,9 @@ export default function FeedbackPage({ type }) {
       style={{ background: isDark ? "#000000" : "#f8fafc" }}
     >
       {/* LEFT COLUMN - PixelBlast Interactive Canvas Card */}
-      <div className="w-full md:w-[45%] lg:w-[50%] p-4 flex flex-col justify-stretch md:min-h-[460px]">
+      <div className="absolute inset-0 md:relative w-full md:w-[45%] lg:w-[50%] p-4 flex flex-col justify-stretch z-0 pointer-events-none md:pointer-events-auto">
         <div
-          className="relative flex-1 min-h-[300px] md:min-h-0 rounded-[24px] overflow-hidden transition-all duration-300"
+          className="relative flex-1 min-h-screen md:min-h-0 rounded-[24px] overflow-hidden transition-all duration-300"
           style={{
             backgroundColor: isDark ? "#000000" : "#ffffff",
           }}
@@ -88,8 +88,8 @@ export default function FeedbackPage({ type }) {
       </div>
 
       {/* RIGHT COLUMN - Centered Form Column */}
-      <div className="flex-1 w-full flex flex-col justify-center items-center p-4 md:p-6 lg:p-8 z-10">
-        <div className="w-full max-w-[420px] flex flex-col">
+      <div className="flex-grow w-full flex flex-col justify-center items-center p-4 md:p-6 lg:p-8 z-10 pointer-events-auto">
+        <div className="w-full max-w-[420px] flex flex-col p-5 sm:p-7 rounded-[28px] border border-neutral-200/40 dark:border-neutral-800/40 bg-white/80 dark:bg-black/60 backdrop-blur-md shadow-xl md:border-none md:bg-transparent md:backdrop-blur-none md:shadow-none md:p-0">
           {/* Back button */}
           <Link
             to="/"

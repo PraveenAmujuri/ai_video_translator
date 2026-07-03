@@ -33,3 +33,11 @@ html.dark body {
   background: rgba(253, 138, 44, 0.65);
   color: inherit;
 }
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

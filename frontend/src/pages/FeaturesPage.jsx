@@ -5,6 +5,10 @@ import CardSwap, { Card } from "../components/ui/CardSwap";
 import { motion } from "framer-motion";
 import ScrollReveal from "../components/ui/ScrollReveal";
 
+const GITHUB_URL = "https://github.com/PraveenAmujuri/ai_video_translator";
+const DOWNLOAD_URL =
+  "https://github.com/PraveenAmujuri/ai_video_translator/releases/download/v1.0.0/EchoX_0.1.0_x64-setup.exe";
+
 const PIPELINE_STEPS = [
   { label: 'Upload', desc: 'Source stream extraction' },
   { label: 'Transcribe', desc: 'Audio to text generation' },
@@ -1213,7 +1217,7 @@ export default function EchoXFeaturesPage() {
           </F>
           <F delay={0.19}>
             <div className="hero-actions">
-              <a href="#download" className="btn-dl"><Dl/> Download for Windows</a>
+              <a href={DOWNLOAD_URL} className="btn-dl"><Dl/> Download for Windows</a>
               <a href="#translate" className="btn-ghost">See how it works <Arr/></a>
             </div>
           </F>
@@ -1571,10 +1575,10 @@ export default function EchoXFeaturesPage() {
           </F>
           <F delay={0.13}>
             <div className="cta-row">
-              <a href="#" className="btn-dl" style={{ fontSize: 14, padding: "13px 26px" }}>
+              <a href={DOWNLOAD_URL} className="btn-dl" style={{ fontSize: 14, padding: "13px 26px" }}>
                 <Dl/> Download for Windows
               </a>
-              <a href="#" className="btn-ghost" style={{ fontSize: 14, padding: "13px 22px" }}>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="btn-ghost" style={{ fontSize: 14, padding: "13px 22px" }}>
                 View on GitHub <Arr/>
               </a>
             </div>

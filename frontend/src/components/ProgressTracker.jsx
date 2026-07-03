@@ -270,7 +270,7 @@ export default function ProgressTracker({
         </div>
 
         {/* PIPELINE STEPS */}
-        <div className="cascade-item mt-10 flex items-center justify-between w-full gap-2 py-4">
+        <div className="cascade-item mt-10 flex items-center justify-between w-full gap-0.5 sm:gap-2 py-4">
           {STEPS.map((step, idx) => {
             const isStepActive = progress >= step.target;
             const isNextStepActive = idx < STEPS.length - 1 && progress >= STEPS[idx + 1].target;
@@ -280,11 +280,11 @@ export default function ProgressTracker({
                 key={step.label}
                 className={`flex items-center ${
                   idx < STEPS.length - 1 ? "flex-1" : "shrink-0"
-                } gap-3`}
+                } gap-0.5 sm:gap-3`}
               >
                 <span
                   tabIndex={0}
-                  className={`lift-on-hover rounded-md px-1 -mx-1 text-xs md:text-sm font-semibold tracking-wider shrink-0 outline-none
+                  className={`lift-on-hover rounded-md px-0.5 text-[10px] sm:text-xs md:text-sm font-semibold tracking-tight sm:tracking-wider shrink-0 outline-none
                     focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-black
                     transition-colors duration-300 ${
                       isStepActive
@@ -297,9 +297,9 @@ export default function ProgressTracker({
                 </span>
 
                 {idx < STEPS.length - 1 && (
-                  <div className="flex-1 flex items-center min-w-[24px] pr-1">
+                  <div className="flex flex-1 items-center min-w-[8px] sm:min-w-[12px] md:min-w-[24px] pr-0.5">
                     <div
-                      className={`h-[2px] flex-1 rounded-full transition-all duration-500 ${
+                      className={`h-[1.5px] sm:h-[2px] flex-1 rounded-full transition-all duration-500 ${
                         isNextStepActive ? "connector-active" : "bg-black/5 dark:bg-white/5"
                       }`}
                       style={
@@ -316,10 +316,10 @@ export default function ProgressTracker({
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="3.5"
+                      strokeWidth="4"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="w-3 h-3 -ml-1 transition-all duration-500 shrink-0"
+                      className="w-2.5 h-2.5 sm:w-3 sm:h-3 -ml-0.5 transition-all duration-500 shrink-0"
                       style={{
                         color: isNextStepActive ? ACCENT : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
                         filter: isNextStepActive ? `drop-shadow(0 0 5px ${ACCENT_SOFT})` : "none",

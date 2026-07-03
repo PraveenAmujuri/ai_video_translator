@@ -15,29 +15,21 @@ export default function SiteLayout() {
   }, [pathname]);
 
   return (
-    <ClickSpark
-      sparkColor={isDark ? "#f97316" : "#ea580c"}
-      sparkSize={10}
-      sparkRadius={15}
-      sparkCount={8}
-      duration={400}
+    <div
+      className="
+        min-h-screen
+        overflow-x-hidden
+        transition-colors
+        duration-300
+        bg-white
+        text-black
+        dark:bg-[#000000]
+        dark:text-white
+      "
     >
-      <div
-        className="
-          min-h-screen
-          overflow-x-hidden
-          transition-colors
-          duration-300
-          bg-white
-          text-black
-          dark:bg-[#000000]
-          dark:text-white
-        "
-      >
-        <Header />
-        <Outlet />
-        <Footer />
-      </div>
-    </ClickSpark>
+      <Header />
+      <Outlet />
+      <Footer />
+    </div>
   );
 }
