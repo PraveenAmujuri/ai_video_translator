@@ -10,7 +10,7 @@ const Button = ({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="
+      className={`
         group relative px-[35px] py-[12px]
         text-[17px] font-medium
         text-[#181818]
@@ -35,7 +35,8 @@ const Button = ({
         active:scale-95
         /* FIX: Added Flexbox centering alignment and gap */
         flex items-center justify-center gap-2
-      "
+        ${className}
+      `}
     >
       {/* FIX: Wrap children in a relative container to prevent flex-items overlapping star layers */}
       <span className="relative z-10 flex items-center justify-center gap-2">
@@ -45,14 +46,14 @@ const Button = ({
       {/* Star 1 */}
       <div
         className="
-          absolute top-[20%] left-[20%] w-[25px] z-[-5]
+          absolute top-[20%] left-[20%] w-[25px] z-[-5] opacity-0
           transition-all duration-[1000ms]
           ease-[cubic-bezier(0.05,0.83,0.43,0.96)]
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[-80%]
           group-hover:left-[-30%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />
@@ -61,14 +62,14 @@ const Button = ({
       {/* Star 2 */}
       <div
         className="
-          absolute top-[45%] left-[45%] w-[15px] z-[-5]
+          absolute top-[45%] left-[45%] w-[15px] z-[-5] opacity-0
           transition-all duration-[1000ms]
           ease-[cubic-bezier(0,0.4,0,1.01)]
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[-25%]
           group-hover:left-[10%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />
@@ -77,14 +78,14 @@ const Button = ({
       {/* Star 3 */}
       <div
         className="
-          absolute top-[40%] left-[40%] w-[5px] z-[-5]
+          absolute top-[40%] left-[40%] w-[5px] z-[-5] opacity-0
           transition-all duration-[1000ms]
           ease-[cubic-bezier(0,0.4,0,1.01)]
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[55%]
           group-hover:left-[25%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />
@@ -93,14 +94,14 @@ const Button = ({
       {/* Star 4 */}
       <div
         className="
-          absolute top-[20%] left-[40%] w-[8px] z-[-5]
+          absolute top-[20%] left-[40%] w-[8px] z-[-5] opacity-0
           transition-all duration-[800ms]
           ease-[cubic-bezier(0,0.4,0,1.01)]
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[30%]
           group-hover:left-[80%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />
@@ -109,14 +110,14 @@ const Button = ({
       {/* Star 5 */}
       <div
         className="
-          absolute top-[25%] left-[45%] w-[15px] z-[-5]
+          absolute top-[25%] left-[45%] w-[15px] z-[-5] opacity-0
           transition-all duration-[600ms]
           ease-[cubic-bezier(0,0.4,0,1.01)]
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[25%]
           group-hover:left-[115%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />
@@ -125,14 +126,14 @@ const Button = ({
       {/* Star 6 */}
       <div
         className="
-          absolute top-[5%] left-[50%] w-[5px] z-[-5]
+          absolute top-[5%] left-[50%] w-[5px] z-[-5] opacity-0
           transition-all duration-[800ms]
           ease-in-out
           drop-shadow-[0_0_0_#fec195]
           group-hover:top-[5%]
           group-hover:left-[60%]
           group-hover:drop-shadow-[0_0_10px_#fec195]
-          group-hover:z-[2]
+          group-hover:z-[2] group-hover:opacity-100
         "
       >
         <Star />

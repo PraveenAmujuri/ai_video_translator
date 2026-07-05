@@ -258,12 +258,12 @@ export default function UploadPanel({
       </div>
 
       {/* URL Section */}
-      <div className="w-full max-w-3xl mx-auto">
+      <div className="w-full max-w-3xl mx-auto px-4 sm:px-0">
         <div className="mb-6">
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-black dark:text-white">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-black dark:text-white">
             Import From URL
           </h2>
-          <p className="mt-2 text-sm text-black/50 dark:text-white/40">
+          <p className="mt-2 text-xs sm:text-sm text-black/50 dark:text-white/40">
             Paste a YouTube link to instantly extract and process its content.
           </p>
         </div>
@@ -276,17 +276,18 @@ export default function UploadPanel({
             flex-col 
             sm:flex-row 
             gap-3 
-            p-2 
-            rounded-2xl 
+            p-3
+            sm:p-2 
+            rounded-[22px] 
             border 
             transition-all
             duration-500
-            overflow-hidden
             backdrop-blur-xl
+            w-full
             ${
               isUrlProcessing
-                ? "border-black/15 dark:border-white/15 bg-black/[0.04] dark:bg-white/[0.04] shadow-[0_0_15px_rgba(255,255,255,0.02)]"
-                : "border-black/10 dark:border-white/10 bg-white/60 dark:bg-black/30 focus-within:border-black/20 dark:focus-within:border-white/20"
+                ? "border-orange-500/20 bg-orange-500/[0.01] shadow-[0_0_20px_rgba(249,115,22,0.04)]"
+                : "border-black/10 dark:border-white/10 bg-white/60 dark:bg-black/30 focus-within:border-orange-500/40 dark:focus-within:border-orange-500/30 focus-within:shadow-[0_0_25px_rgba(249,115,22,0.03)]"
             }
           `}
         >
@@ -295,35 +296,50 @@ export default function UploadPanel({
             <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-r from-transparent via-white/5 dark:via-white/5 to-transparent animate-[premiumShimmer_3s_infinite_linear]" style={{ backgroundSize: '200% 100%' }} />
           )}
 
-          {/* Input Field */}
-          <input
-            type="text"
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-            disabled={isDisabled}
-            placeholder={isUrlProcessing ? "Extracting remote stream metadata..." : "https://youtube.com/watch?v=..."}
-            className="
-              flex-1 
-              h-12 
-              px-4 
-              bg-transparent 
-              text-black 
-              dark:text-white 
-              text-sm 
-              outline-none 
-              placeholder:text-black/35 
-              dark:placeholder:text-white/35
-              disabled:opacity-40
-              disabled:cursor-not-allowed
-              z-20
-            "
-          />
+          {/* Input Field Container */}
+          <div className="relative flex-1 flex items-center bg-black/[0.03] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 rounded-xl px-3.5 transition-all duration-300 focus-within:border-orange-500/30">
+            <svg
+              className="w-4 h-4 text-black/45 dark:text-white/40 mr-2.5 shrink-0"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            <input
+              type="text"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              disabled={isDisabled}
+              placeholder={isUrlProcessing ? "Extracting metadata..." : "https://youtube.com/watch?v=..."}
+              className="
+                flex-1 
+                h-12 
+                bg-transparent 
+                text-black 
+                dark:text-white 
+                text-sm 
+                outline-none 
+                placeholder:text-black/35 
+                dark:placeholder:text-white/35
+                disabled:opacity-40
+                disabled:cursor-not-allowed
+                z-20
+              "
+            />
+          </div>
 
           {/* Action Button */}
           <ShinyButton
             onClick={handleYoutubeSubmit}
             disabled={isDisabled || !youtubeUrl.trim()}
-            className="shrink-0 z-20"
+            className="w-full sm:w-auto shrink-0 z-20 rounded-xl sm:rounded-md py-3 sm:py-[12px] text-center flex justify-center items-center font-semibold"
           >
             {isUrlProcessing ? (
               <>

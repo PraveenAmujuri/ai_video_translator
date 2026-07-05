@@ -90,7 +90,11 @@ export default function ProgressTracker({
   status,
 }) {
   const { isDark } = useTheme();
-  const [message, setMessage] = useState("Waiting...");
+  const [message, setMessage] = useState(() => {
+    if (status === "completed") return "Translation completed successfully!";
+    if (status === "failed") return "Translation failed.";
+    return "Waiting...";
+  });
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
   const prevProgress = useRef(progress);
@@ -101,7 +105,7 @@ export default function ProgressTracker({
   }, []);
 
   useEffect(() => {
-    if (!jobId) return;
+    if (!jobId || status === "completed" || status === "failed") return;
 
     const interval = setInterval(async () => {
       try {
@@ -134,7 +138,7 @@ export default function ProgressTracker({
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [jobId]);
+  }, [jobId, status]);
 
   const isActive = status !== "completed" && status !== "failed";
   const theme = getStatusTheme(status, error);

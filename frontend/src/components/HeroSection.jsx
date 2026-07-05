@@ -45,7 +45,7 @@ export default function HeroSection() {
 
           {/* Eyebrow */}
           <p
-            className="text-[24px] md:text-[36px] italic font-light tracking-[-0.03em] transition-colors duration-300"
+            className="text-[18px] sm:text-[24px] md:text-[36px] italic font-light tracking-[-0.03em] transition-colors duration-300"
             style={{ color: isDark ? "rgba(255,255,255,0.88)" : "rgba(0,0,0,0.82)" }}
           >
             Break The
@@ -53,7 +53,7 @@ export default function HeroSection() {
 
           {/* Main heading */}
           <h1
-            className="mt-1 text-[62px] leading-[1] md:text-[96px] font-bold tracking-[-0.045em] transition-colors duration-300"
+            className="mt-1 text-[38px] sm:text-[62px] leading-[1.1] md:text-[96px] font-bold tracking-[-0.045em] transition-colors duration-300"
             style={{ color: isDark ? "rgba(255,255,255,0.96)" : "rgba(0,0,0,0.94)" }}
           >
             Audio Barrier.
