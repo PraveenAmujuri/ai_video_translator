@@ -43,6 +43,13 @@ fn demucs_exe_path(app: &AppHandle) -> Result<PathBuf, String> {
     } else {
         "demucs"
     };
+    
+    // Check if the ZIP was extracted with a nested folder wrapper
+    let nested = dir.join("demucs").join(exe);
+    if nested.exists() {
+        return Ok(nested);
+    }
+    
     Ok(dir.join(exe))
 }
 
@@ -94,6 +101,7 @@ pub async fn check_and_install_demucs_engine(app: AppHandle) -> Result<bool, Str
 
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
+    let mut last_emitted_percent: u32 = 0;
 
     while let Some(chunk_result) = stream.next().await {
         let chunk = chunk_result.map_err(|e| format!("Error downloading chunk: {}", e))?;
@@ -104,13 +112,17 @@ pub async fn check_and_install_demucs_engine(app: AppHandle) -> Result<bool, Str
 
         if total_size > 0 {
             let percentage = (downloaded as f32 / total_size as f32) * 100.0;
-            let _ = app.emit(
-                "separation-download-progress",
-                SeparationDownloadProgress {
-                    percentage,
-                    status: "downloading".to_string(),
-                },
-            );
+            let percent_int = percentage as u32;
+            if percent_int > last_emitted_percent || percent_int == 100 {
+                last_emitted_percent = percent_int;
+                let _ = app.emit(
+                    "separation-download-progress",
+                    SeparationDownloadProgress {
+                        percentage,
+                        status: "downloading".to_string(),
+                    },
+                );
+            }
         }
     }
 
@@ -269,10 +281,12 @@ pub async fn run_local_audio_separation(
         // Simple heuristic: let demucs choose GPU by default
         hardware = "Auto (CPU/GPU)";
     }
+    let demucs_parent = demucs_exe.parent().ok_or("Cannot resolve Demucs parent directory")?;
     println!("[separation] Spawning Demucs executable utilizing hardware: {}", hardware);
 
     let sep_status = tokio::process::Command::new(&demucs_exe)
         .args(&args)
+        .env("TORCH_HOME", demucs_parent)
         .status()
         .await
         .map_err(|e| format!("Demucs execution failed: {}", e))?;
