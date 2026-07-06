@@ -864,14 +864,13 @@ a { color: var(--text-primary); text-decoration: none; }
    7. COMPONENTS
    ========================================================================= */
 
-/* Panel */
 .panel {
   background: var(--bg-panel);
   border: 1px solid var(--line);
   border-radius: var(--r-5);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
   transition: border-color var(--dur-base) var(--ease-out);
 }
@@ -2770,66 +2769,50 @@ a { color: var(--text-primary); text-decoration: none; }
    ========================================================================= */
 /* src/App.css */
 
-/* Target the right-side control configuration block */
-.control-panel,
-div[data-panel="control"],
-.bento-col:last-child > * {
+/* Target both columns in bento grid to stretch panels */
+.bento-col > .panel {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   height: 100%;
 }
 
-/* Force the inner settings wrapper holding the dropdown fields to fill out the workspace */
-.control-panel-content,
-.control-panel form,
-.control-panel .form-container {
+/* Force panel-body inside bento grid to stretch */
+.bento-col > .panel > .panel-body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Keeps controls at the top but allows the container to handle layout expansion */
-  gap: 16px; /* Maintains uniform structural spaces between input rows */
-  height: 100%;
 }
 
-/* Optional high-end designer touch: If you have an options block (like background audio volume), */
-/* pushing it to the absolute bottom of the card cleans up the empty layout space instantly */
-.control-panel .advanced-options-group,
-.control-panel .audio-options {
-  margin-top: auto; /* Automatically drops the background audio options to perfectly align with the dropzone baseline */
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color, #2C2C2E); /* Crisp Swiss minimalist separator rule */
-}
-/* =========================================================================
-   FIX: BALANCED SOURCE FIELD CONTENT DISTRIBUTION
-   ========================================================================= */
-
-/* 1. Reset standard field layout margins when used inside the source tab panels */
-.panel[data-panel="source"] .panel-body form.field {
+/* Force dropzone inside bento grid to stretch */
+.bento-col .dropzone {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  justify-content: flex-start; /* Prevents awkward random gaps */
+  justify-content: center;
 }
 
-/* 2. Target the main input block row and give it an explicit layout buffer */
-.panel[data-panel="source"] .input-group {
-  margin-bottom: 12px;
+/* Force online url input form inside bento grid to stretch */
+.bento-col form[aria-label="Online video URL input"] {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 3. Take the trailing platform help text line and cleanly push it to the bottom */
-.panel[data-panel="source"] .field-help.url-help,
-.panel[data-panel="source"] .field-help {
-  margin-top: auto; /* Instantly shifts the '1000+ more sites' text line to line up with the baseline */
+/* Take the trailing platform help text line and cleanly push it to the bottom */
+.bento-col form[aria-label="Online video URL input"] .field-help.url-help,
+.bento-col form[aria-label="Online video URL input"] .field-help {
+  margin-top: auto;
   padding-top: 16px;
   width: 100%;
-  border-top: 1px dashed var(--line-faint, #232325); /* Adds a premium subtle divider indicator above the list */
+  border-top: 1px dashed var(--line-faint, #232325);
   color: var(--text-tertiary);
 }
 
-/* 4. Ensure any operational badges or errors float smoothly between rows */
-.panel[data-panel="source"] .detection-badge,
-.panel[data-panel="source"] .field-error {
-  margin-top: auto; /* Aligns detection pill to the footer row layout cleanly */
+/* Ensure operational badges or errors float smoothly to the bottom footer */
+.bento-col form[aria-label="Online video URL input"] .detection-badge,
+.bento-col form[aria-label="Online video URL input"] .field-error {
+  margin-top: auto;
   margin-bottom: 0;
 }
 /* =========================================================================

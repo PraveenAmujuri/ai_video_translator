@@ -50,6 +50,8 @@ export default function App() {
     targetLanguage: settings.defaultTargetLanguage,
     voice: settings.defaultVoice,
     sourceLanguage: settings.defaultSourceLanguage,
+    preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
+    backgroundAudioVolume: settings.backgroundAudioVolume,
   });
 
   const [page, setPage] = useState<SidebarPage>("home");
@@ -75,6 +77,8 @@ export default function App() {
       targetLanguage: settings.defaultTargetLanguage,
       voice: settings.defaultVoice,
       sourceLanguage: settings.defaultSourceLanguage,
+      preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
+      backgroundAudioVolume: settings.backgroundAudioVolume,
     });
   }, [
     state.phase,
@@ -83,6 +87,8 @@ export default function App() {
     settings.defaultTargetLanguage,
     settings.defaultVoice,
     settings.defaultSourceLanguage,
+    settings.preserveBackgroundMusicEffects,
+    settings.backgroundAudioVolume,
   ]);
 
   useEffect(() => {
@@ -147,20 +153,12 @@ export default function App() {
 
   const handleFileReady = (path: string) => {
     pendingSourceRef.current = { kind: "file", label: basename(path) };
-    actions.startFromLocalFile(path, {
-      ...options,
-      preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
-      backgroundAudioVolume: settings.backgroundAudioVolume,
-    });
+    actions.startFromLocalFile(path, options);
   };
 
   const handleUrlReady = (url: string) => {
     pendingSourceRef.current = { kind: "url", label: url };
-    actions.startFromYouTubeUrl(url, {
-      ...options,
-      preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
-      backgroundAudioVolume: settings.backgroundAudioVolume,
-    });
+    actions.startFromYouTubeUrl(url, options);
   };
 
   const showProgress = state.phase !== "idle" && state.phase !== "error";

@@ -172,30 +172,6 @@ export function SettingsPage({
 
         <div className="settings-row">
           <div className="settings-row-text">
-            <span className="settings-row-title">Preserve Background Music & Effects (Beta)</span>
-            <span className="settings-row-help">
-              Preserves background music and ambient sounds while replacing spoken dialogue. Requires a one-time model download.
-            </span>
-          </div>
-          <div className="settings-row-control">
-            <button
-              type="button"
-              className="switch"
-              role="switch"
-              aria-checked={settings.preserveBackgroundMusicEffects}
-              onClick={() =>
-                onChange({
-                  preserveBackgroundMusicEffects: !settings.preserveBackgroundMusicEffects,
-                })
-              }
-            >
-              <span className="switch-thumb" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        <div className="settings-row">
-          <div className="settings-row-text">
             <span className="settings-row-title">Background mix level</span>
             <span className="settings-row-help">
               Applied only when background audio is preserved.
@@ -209,7 +185,7 @@ export function SettingsPage({
               step={1}
               value={volumePercent}
               className="slider"
-              disabled={!settings.preserveBackgroundAudio && !settings.preserveBackgroundMusicEffects}
+              disabled={!settings.preserveBackgroundAudio}
               onChange={(e) =>
                 onChange({
                   backgroundAudioVolume: Number(e.currentTarget.value) / 100,
