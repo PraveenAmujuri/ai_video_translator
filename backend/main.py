@@ -77,6 +77,16 @@ app.mount(
     name="hls",
 )
 
+# Host static assets like compiled binaries (demucs-win.zip)
+from pathlib import Path
+static_dir = Path("static")
+static_dir.mkdir(exist_ok=True)
+app.mount(
+    "/static",
+    StaticFiles(directory=static_dir),
+    name="static",
+)
+
 @app.get("/")
 async def root():
     return {

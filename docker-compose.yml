@@ -16,6 +16,7 @@ services:
       - ./backend/outputs:/app/outputs
       - ./backend/uploads:/app/uploads
       - ./backend/hls:/app/hls
+      - ./backend/static:/app/static
 
   nginx:
     image: nginx:alpine
