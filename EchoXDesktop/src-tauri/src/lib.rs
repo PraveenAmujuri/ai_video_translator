@@ -10,6 +10,9 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 
+mod separation;
+use separation::{check_and_install_demucs_engine, run_local_audio_separation, run_local_audio_mixing, download_dubbed_voice, cleanup_local_job_files};
+
 const BACKEND_URL: &str = "https://api.praveenai.tech";
 const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
 const YTDLP_GITHUB_API: &str =
@@ -556,6 +559,29 @@ async fn save_translated_video(
             .map_err(|e| format!("Failed to create directories: {}", e))?;
     }
 
+    let ext = dest_path_buf
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("mp4")
+        .to_lowercase();
+    let temp_dir = std::env::temp_dir()
+        .join("EchoX")
+        .join("jobs")
+        .join(&job_id);
+    let local_output_path = temp_dir.join(format!("local_output.{}", ext));
+
+    if local_output_path.exists() {
+        fs::copy(&local_output_path, &dest_path_buf)
+            .await
+            .map_err(|e| format!("Failed to copy local mastered output: {}", e))?;
+        
+        let saved_path = dest_path_buf
+            .to_str()
+            .ok_or_else(|| "Saved path is not valid UTF-8".to_string())?
+            .to_string();
+        return Ok(saved_path);
+    }
+
     let download_url = format!("{}/outputs/{}/output.mp4", BACKEND_URL, job_id);
 
     let client = reqwest::Client::new();
@@ -626,6 +652,11 @@ pub fn run() {
             process_translation_pipeline,
             save_translated_video,
             update_extractor_engine,
+            check_and_install_demucs_engine,
+            run_local_audio_separation,
+            run_local_audio_mixing,
+            download_dubbed_voice,
+            cleanup_local_job_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
