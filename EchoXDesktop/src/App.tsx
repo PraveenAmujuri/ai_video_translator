@@ -147,12 +147,20 @@ export default function App() {
 
   const handleFileReady = (path: string) => {
     pendingSourceRef.current = { kind: "file", label: basename(path) };
-    actions.startFromLocalFile(path, options);
+    actions.startFromLocalFile(path, {
+      ...options,
+      preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
+      backgroundAudioVolume: settings.backgroundAudioVolume,
+    });
   };
 
   const handleUrlReady = (url: string) => {
     pendingSourceRef.current = { kind: "url", label: url };
-    actions.startFromYouTubeUrl(url, options);
+    actions.startFromYouTubeUrl(url, {
+      ...options,
+      preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
+      backgroundAudioVolume: settings.backgroundAudioVolume,
+    });
   };
 
   const showProgress = state.phase !== "idle" && state.phase !== "error";

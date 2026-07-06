@@ -51,8 +51,11 @@ dist/
 temp/
 tmp/
 
-# FFmpeg Generated
-*.ts
+# FFmpeg Generated (MPEG-2 Transport Stream files)
+hls/**/*.ts
+outputs/**/*.ts
+temp/**/*.ts
+tmp/**/*.ts
 *.m3u8
 
 # Whisper / AI Cache

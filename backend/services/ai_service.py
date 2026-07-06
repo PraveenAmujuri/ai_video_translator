@@ -338,32 +338,42 @@ async def generate_tts_audio(
             )
 
     from core.utils import run_subprocess
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        str(concat_txt),
-
-        "-vn",
-
-        "-ar",
-        "44100",
-
-        "-ac",
-        "2",
-
-        "-c:a",
-        "libmp3lame",
-
-        "-b:a",
-        "192k",
-
-        str(output_path),
-    ]
+    if output_path.suffix.lower() == ".wav":
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_txt),
+            "-vn",
+            "-c:a",
+            "pcm_s16le",
+            str(output_path),
+        ]
+    else:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_txt),
+            "-vn",
+            "-ar",
+            "44100",
+            "-ac",
+            "2",
+            "-c:a",
+            "libmp3lame",
+            "-b:a",
+            "192k",
+            str(output_path),
+        ]
 
     returncode, stdout, stderr = await run_subprocess(
         cmd
