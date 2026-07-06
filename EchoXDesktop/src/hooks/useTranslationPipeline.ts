@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { pollJobProgress, resolveStreamEndpoints } from "../services/api";
 import {
   tauriDownloadVideo,
@@ -106,6 +107,7 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
           }));
 
           if (progress.status === "completed") {
+            let localVideoUrl: string | undefined = undefined;
             if (localSeparationActive && instrumentalPath) {
               setState((prev) => ({
                 ...prev,
@@ -119,7 +121,7 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                 }));
                 const ext = videoPath.split(".").pop() || "mp4";
                 const outputName = `local_output.${ext}`;
-                await tauriRunLocalAudioMixing(
+                const localOutputPath = await tauriRunLocalAudioMixing(
                   jobId,
                   videoPath,
                   instrumentalPath,
@@ -127,6 +129,7 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                   outputName,
                   volume
                 );
+                localVideoUrl = convertFileSrc(localOutputPath);
                 setState((prev) => ({
                   ...prev,
                   logs: [...prev.logs, makeLog("Local mastering & mixing completed successfully.")],
@@ -140,7 +143,13 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
               }
             }
 
-            const resolved = resolveStreamEndpoints(jobId);
+            let resolved = resolveStreamEndpoints(jobId);
+            if (localVideoUrl) {
+              resolved = {
+                ...resolved,
+                videoUrl: localVideoUrl,
+              };
+            }
             setEndpoints(resolved);
             setState((prev) => ({
               ...prev,

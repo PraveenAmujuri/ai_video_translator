@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use futures_util::StreamExt;
 use tauri::{AppHandle, Emitter, Manager};
 use ort::session::Session;
-use ort::value::Tensor;
+use ort::value::TensorRef;
 
 const ENGINE_ZIP_URL: &str = "https://api.praveenai.tech/static/separation-engine-win.zip";
 
@@ -263,20 +263,60 @@ impl SeparationEngine for OnnxSeparationEngine {
         }
 
         // 1. Programmatically load onnxruntime shared library dynamically
-        println!("[separation] Loading ONNX Runtime dynamically from: {}", dylib_path.display());
-        let _ = ort::init_from(&dylib_path);
+        println!("[ONNX] Starting ort::init_from() with path: {}", dylib_path.display());
+        let init_start = Instant::now();
+        let init_res = ort::init_from(&dylib_path);
+        let init_elapsed = init_start.elapsed().as_millis();
+        let init_res_str = match &init_res {
+            Ok(_) => "Ok(EnvironmentBuilder)".to_string(),
+            Err(e) => format!("Err({:?})", e),
+        };
+        println!("[ONNX] ort::init_from() completed in {} ms, result: {}", init_elapsed, init_res_str);
+        if let Err(e) = init_res {
+            println!("[ONNX] ort::init_from() error: {:?}", e);
+            return Err(format!("ort::init_from error: {:?}", e));
+        }
 
-        // 2. Create the ONNX Session with EPs: CUDA -> DirectML -> CPU
-        println!("[separation] Creating ONNX session for model: {}", model_path.display());
-        let mut session = Session::builder()
-            .map_err(|e| format!("Failed to create SessionBuilder: {}", e))?
-            .with_execution_providers([
-                ort::ep::CUDA::default().build(),
-                ort::ep::DirectML::default().build(),
-            ])
-            .map_err(|e| format!("Failed to set execution providers: {}", e))?
-            .commit_from_file(model_path)
-            .map_err(|e| format!("Failed to load model file: {}", e))?;
+        // 2. Create the ONNX Session with EPs: CPU only
+        println!("[ONNX] Creating SessionBuilder...");
+        let builder_start = Instant::now();
+        let session_builder = Session::builder();
+        let builder_elapsed = builder_start.elapsed().as_millis();
+        println!("[ONNX] SessionBuilder created in {} ms", builder_elapsed);
+        
+        let mut session_builder = session_builder
+            .map_err(|e| {
+                println!("[ONNX] SessionBuilder creation failed: {:?}", e);
+                format!("Failed to create SessionBuilder: {:?}", e)
+            })?;
+
+        println!("[ONNX] Configuring execution provider: CPU...");
+        let ep_start = Instant::now();
+        let cpu_ep = ort::ep::CPU::default().build();
+        session_builder = session_builder
+            .with_execution_providers([cpu_ep])
+            .map_err(|e| {
+                println!("[ONNX] Failed to set execution provider (CPU): {:?}", e);
+                format!("Failed to set execution provider (CPU): {:?}", e)
+            })?
+            .with_intra_threads(4)
+            .map_err(|e| {
+                println!("[ONNX] Failed to set intra threads limit: {:?}", e);
+                format!("Failed to set intra threads limit: {:?}", e)
+            })?;
+        let ep_elapsed = ep_start.elapsed().as_millis();
+        println!("[ONNX] Execution provider configured in {} ms", ep_elapsed);
+
+        println!("[ONNX] Loading model and creating Session from file: {}", model_path.display());
+        let session_start = Instant::now();
+        let mut session = session_builder
+            .commit_from_file(&model_path)
+            .map_err(|e| {
+                println!("[ONNX] Session creation failed: {:?}", e);
+                format!("Failed to load model file: {:?}", e)
+            })?;
+        let session_elapsed = session_start.elapsed().as_millis();
+        println!("[ONNX] Session created successfully in {} ms", session_elapsed);
 
         // 3. Read the extracted stereo 44.1kHz audio wav
         println!("[separation] Reading input audio file: {}", input_path.display());
@@ -312,7 +352,8 @@ impl SeparationEngine for OnnxSeparationEngine {
 
         // Chunk parameters: Demucs ONNX expects [1, 2, 343980]
         let chunk_size = 343980;
-        let hop_size = 171990; // 50% overlap
+        let hop_size = 257985; // 25% overlap (75% hop size)
+        let overlap_size = 85995; // 25% of 343980
 
         // Stereo output buffers
         let mut vocals_l = vec![0.0f32; stereo_length];
@@ -321,39 +362,58 @@ impl SeparationEngine for OnnxSeparationEngine {
         let mut inst_r = vec![0.0f32; stereo_length];
         let mut weight_accum = vec![0.0f32; stereo_length];
 
-        // Linear crossfade window
+        // Linear crossfade window for 25% overlap
         let mut window = vec![1.0f32; chunk_size];
-        for t in 0..hop_size {
-            let fade = t as f32 / hop_size as f32;
+        for t in 0..overlap_size {
+            let fade = t as f32 / overlap_size as f32;
             window[t] = fade;
             window[chunk_size - 1 - t] = fade;
         }
 
+        // Pre-allocated input array to avoid heap allocations in the loop
+        let mut input_array = ndarray::Array3::<f32>::zeros([1, 2, chunk_size]);
+
         let mut offset = 0;
         while offset < stereo_length {
-            let mut chunk_left = vec![0.0f32; chunk_size];
-            let mut chunk_right = vec![0.0f32; chunk_size];
-
             let copy_len = std::cmp::min(chunk_size, stereo_length - offset);
-            chunk_left[..copy_len].copy_from_slice(&left[offset..(offset + copy_len)]);
-            chunk_right[..copy_len].copy_from_slice(&right[offset..(offset + copy_len)]);
 
-            // Combine into shape [1, 2, 343980]
-            let mut input_data = Vec::with_capacity(2 * chunk_size);
-            input_data.extend_from_slice(&chunk_left);
-            input_data.extend_from_slice(&chunk_right);
+            // Populate the pre-allocated array (with zero-padding for trailing chunk)
+            {
+                let mut slice = input_array.view_mut();
+                if copy_len < chunk_size {
+                    for t in 0..chunk_size {
+                        if t < copy_len {
+                            slice[[0, 0, t]] = left[offset + t];
+                            slice[[0, 1, t]] = right[offset + t];
+                        } else {
+                            slice[[0, 0, t]] = 0.0;
+                            slice[[0, 1, t]] = 0.0;
+                        }
+                    }
+                } else {
+                    for t in 0..chunk_size {
+                        slice[[0, 0, t]] = left[offset + t];
+                        slice[[0, 1, t]] = right[offset + t];
+                    }
+                }
+            }
 
-            let input_tensor = ndarray::Array3::from_shape_vec([1, 2, chunk_size], input_data)
-                .map_err(|e| format!("Failed to create input tensor: {}", e))?;
-
-            let input_tensor_ort = Tensor::from_array(input_tensor)
-                .map_err(|e| format!("Failed to convert input to ONNX tensor: {}", e))?;
+            // Create zero-copy tensor view from the pre-allocated array view
+            let input_tensor_ort = TensorRef::from_array_view(input_array.view())
+                .map_err(|e| format!("Failed to create zero-copy input tensor view: {}", e))?;
 
             // Run ONNX inference
             let inputs = ort::inputs!["mix" => input_tensor_ort];
             
+            println!("[ONNX] Running inference on chunk at offset {}...", offset);
+            let run_start = Instant::now();
             let outputs = session.run(inputs)
-                .map_err(|e| format!("Inference run failed: {}", e))?;
+                .map_err(|e| {
+                    println!("[ONNX] Inference run failed: {:?}", e);
+                    format!("Inference run failed: {:?}", e)
+                })?;
+            let run_elapsed = run_start.elapsed().as_millis();
+            println!("[ONNX] Inference chunk completed in {} ms", run_elapsed);
 
             // Output tensor is of shape [1, 4, 2, 343980]
             let stems_tensor = outputs["stems"]
@@ -394,6 +454,14 @@ impl SeparationEngine for OnnxSeparationEngine {
                 inst_r[idx] /= w;
             }
         }
+
+        let mut max_vocals = 0.0f32;
+        let mut max_inst = 0.0f32;
+        for idx in 0..stereo_length {
+            max_vocals = max_vocals.max(vocals_l[idx].abs()).max(vocals_r[idx].abs());
+            max_inst = max_inst.max(inst_l[idx].abs()).max(inst_r[idx].abs());
+        }
+        println!("[separation] Stems peak amplitude: Vocals={:.4}, Instrumental={:.4}", max_vocals, max_inst);
 
         // Write outputs as stereo 44100Hz WAV files
         let final_vocals = output_dir.join("vocals.wav");
@@ -504,6 +572,26 @@ pub async fn run_local_audio_mixing(
         .join(&job_id);
     let output_path = temp_dir.join(&output_name).to_str().unwrap().to_string();
     println!("[mixing] Starting local FFmpeg mastering & mixing for output: {}", output_path);
+    println!("[mixing] Diagnostics:");
+    println!("  Video path: '{}' (exists: {})", video_path, Path::new(&video_path).exists());
+    println!("  Dubbed path: '{}' (exists: {})", dubbed_path, Path::new(&dubbed_path).exists());
+    println!("  Instrumental path: '{}' (exists: {})", instrumental_path, Path::new(&instrumental_path).exists());
+
+    // Self-healing: if the frontend sends paths pointing to an older job directory due to state caching,
+    // we resolve them to the current job directory if the files exist there.
+    let mut resolved_instrumental_path = instrumental_path.clone();
+    let local_inst = temp_dir.join("instrumental.wav");
+    if local_inst.exists() {
+        println!("[mixing] Self-healing: Overriding instrumental path from old job to current: {}", local_inst.display());
+        resolved_instrumental_path = local_inst.to_str().unwrap().to_string();
+    }
+
+    let mut resolved_dubbed_path = dubbed_path.clone();
+    let local_dubbed = temp_dir.join("dubbed_audio.wav");
+    if local_dubbed.exists() {
+        println!("[mixing] Self-healing: Overriding dubbed path from old job to current: {}", local_dubbed.display());
+        resolved_dubbed_path = local_dubbed.to_str().unwrap().to_string();
+    }
 
     // Let's determine target format
     let ext = Path::new(&output_path)
@@ -518,12 +606,24 @@ pub async fn run_local_audio_mixing(
     let mut args = vec!["-y"];
     let filter_complex_str = format!("[0:a]volume={}[bg];[bg][1:a]amix=inputs=2:duration=longest[a]", volume);
 
-    if instrumental_path.is_empty() || !Path::new(&instrumental_path).exists() {
+    let hq_filter_complex_val = if is_audio {
+        format!(
+            "[0:a]volume={:.4}[bg];[bg]loudnorm=I=-16:TP=-1.5:LRA=11[inst_norm];[1:a]compand=attacks=0.01:decays=0.1:points=-900/-900|-20/-12|0/-3[dub_compressed];[inst_norm][dub_compressed]amix=inputs=2:duration=longest:dropout_transition=2[mixed];[mixed]loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+            volume
+        )
+    } else {
+        format!(
+            "[2:a]volume={:.4}[bg];[bg]loudnorm=I=-16:TP=-1.5:LRA=11[inst_norm];[1:a]compand=attacks=0.01:decays=0.1:points=-900/-900|-20/-12|0/-3[dub_compressed];[inst_norm][dub_compressed]amix=inputs=2:duration=longest:dropout_transition=2[mixed];[mixed]loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+            volume
+        )
+    };
+
+    if resolved_instrumental_path.is_empty() || !Path::new(&resolved_instrumental_path).exists() {
         // Simple mixing fallback
         if is_audio {
             args.extend([
                 "-i", &video_path,
-                "-i", &dubbed_path,
+                "-i", &resolved_dubbed_path,
                 "-filter_complex", &filter_complex_str,
                 "-map", "[a]",
             ]);
@@ -537,7 +637,7 @@ pub async fn run_local_audio_mixing(
         } else {
             args.extend([
                 "-i", &video_path,
-                "-i", &dubbed_path,
+                "-i", &resolved_dubbed_path,
                 "-filter_complex", &filter_complex_str,
                 "-map", "0:v:0",
                 "-map", "[a]",
@@ -551,13 +651,9 @@ pub async fn run_local_audio_mixing(
         // High-Quality AI Preserved Mastering Pipeline
         if is_audio {
             args.extend([
-                "-i", &instrumental_path,
-                "-i", &dubbed_path,
-                "-filter_complex",
-                "[0:a]loudnorm=I=-16:TP=-1.5:LRA=11[inst_norm]; \
-                 [1:a]compand=attacks=0.01:decays=0.1:points=-900/-900|-20/-12|0/-3:soft-link=0.01[dub_compressed]; \
-                 [inst_norm][dub_compressed]amix=inputs=2:duration=longest:dropout_transition=2[mixed]; \
-                 [mixed]loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+                "-i", &resolved_instrumental_path,
+                "-i", &resolved_dubbed_path,
+                "-filter_complex", &hq_filter_complex_val,
                 "-map", "[a]",
             ]);
             // Add codec
@@ -571,13 +667,9 @@ pub async fn run_local_audio_mixing(
         } else {
             args.extend([
                 "-i", &video_path,
-                "-i", &dubbed_path,
-                "-i", &instrumental_path,
-                "-filter_complex",
-                "[2:a]loudnorm=I=-16:TP=-1.5:LRA=11[inst_norm]; \
-                 [1:a]compand=attacks=0.01:decays=0.1:points=-900/-900|-20/-12|0/-3:soft-link=0.01[dub_compressed]; \
-                 [inst_norm][dub_compressed]amix=inputs=2:duration=longest:dropout_transition=2[mixed]; \
-                 [mixed]loudnorm=I=-16:TP=-1.5:LRA=11[a]",
+                "-i", &resolved_dubbed_path,
+                "-i", &resolved_instrumental_path,
+                "-filter_complex", &hq_filter_complex_val,
                 "-map", "0:v:0",
                 "-map", "[a]",
                 "-c:v", "copy",
