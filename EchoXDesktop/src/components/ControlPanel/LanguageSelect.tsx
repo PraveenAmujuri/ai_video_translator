@@ -80,6 +80,21 @@ export function LanguageSelect({
                 opt.code === "en" ||
                 opt.code === "hi" ||
                 opt.code === "te" ||
+                opt.code === "ml" ||
+                opt.code === "ur" ||
+                opt.code === "es" ||
+                opt.code === "fr" ||
+                opt.code === "de" ||
+                opt.code === "it" ||
+                opt.code === "pt" ||
+                opt.code === "zh" ||
+                opt.code === "ru" ||
+                opt.code === "ar" ||
+                opt.code === "tr" ||
+                opt.code === "id" ||
+                opt.code === "vi" ||
+                opt.code === "nl" ||
+                opt.code === "pl" ||
                 opt.code === "auto";
 
               const isHovered = hoveredCode === opt.code;

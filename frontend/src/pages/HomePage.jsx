@@ -21,7 +21,7 @@ export default function HomePage() {
   const [status, setStatus] = useState(() => localStorage.getItem("echox_status") || "idle");
   const [videoUrl, setVideoUrl] = useState(() => localStorage.getItem("echox_video_url") || null);
   const [language, setLanguage] = useState(() => localStorage.getItem("echox_language") || "te");
-  const [voice, setVoice] = useState(() => localStorage.getItem("echox_voice") || "te-IN-MohanNeural");
+  const [voice, setVoice] = useState(() => localStorage.getItem("echox_voice") || "te_IN-maya-medium");
 
   // Sync state changes with localStorage
   useEffect(() => {
@@ -78,13 +78,8 @@ export default function HomePage() {
       >
         {/* Grid Background - Dark Mode */}
         <div
-          className="absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500"
+          className="absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500 grid-bg-dark"
           style={{
-            backgroundImage: `
-              linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px)
-            `,
-            backgroundSize: "64px 64px",
             maskImage:
               "radial-gradient(ellipse at center, black 40%, transparent 100%)",
             WebkitMaskImage:
@@ -95,13 +90,8 @@ export default function HomePage() {
 
         {/* Grid Background - Light Mode */}
         <div
-          className="absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500"
+          className="absolute inset-0 -z-10 pointer-events-none transition-opacity duration-500 grid-bg-light"
           style={{
-            backgroundImage: `
-              linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px)
-            `,
-            backgroundSize: "64px 64px",
             maskImage:
               "radial-gradient(ellipse at center, black 40%, transparent 100%)",
             WebkitMaskImage:

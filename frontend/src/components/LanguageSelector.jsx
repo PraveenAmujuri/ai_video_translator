@@ -4,8 +4,32 @@ const LANGUAGES = [
   { code: "en", label: "English", supported: true },
   { code: "hi", label: "Hindi", supported: true },
   { code: "te", label: "Telugu", supported: true },
+  { code: "ml", label: "Malayalam", supported: true },
+  { code: "ur", label: "Urdu", supported: true },
+  { code: "es", label: "Spanish", supported: true },
+  { code: "fr", label: "French", supported: true },
+  { code: "de", label: "German", supported: true },
+  { code: "it", label: "Italian", supported: true },
+  { code: "pt", label: "Portuguese", supported: true },
+  { code: "zh", label: "Chinese", supported: true },
+  { code: "ru", label: "Russian", supported: true },
+  { code: "ar", label: "Arabic", supported: true },
+  { code: "tr", label: "Turkish", supported: true },
+  { code: "id", label: "Indonesian", supported: true },
+  { code: "vi", label: "Vietnamese", supported: true },
+  { code: "nl", label: "Dutch", supported: true },
+  { code: "pl", label: "Polish", supported: true },
   { code: "ta", label: "Tamil", supported: false },
+  { code: "kn", label: "Kannada", supported: false },
+  { code: "bn", label: "Bengali", supported: false },
+  { code: "mr", label: "Marathi", supported: false },
+  { code: "gu", label: "Gujarati", supported: false },
+  { code: "pa", label: "Punjabi", supported: false },
+  { code: "or", label: "Odia", supported: false },
+  { code: "as", label: "Assamese", supported: false },
   { code: "ja", label: "Japanese", supported: false },
+  { code: "ko", label: "Korean", supported: false },
+  { code: "th", label: "Thai", supported: false },
 ];
 
 export default function LanguageSelector({
@@ -135,6 +159,7 @@ export default function LanguageSelector({
               py-1.5
               max-h-60
               overflow-y-auto
+              custom-scrollbar
             "
           >
             {LANGUAGES.map((opt) => (

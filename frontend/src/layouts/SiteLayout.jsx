@@ -27,9 +27,11 @@ export default function SiteLayout() {
         dark:text-white
       "
     >
-      <Header />
-      <Outlet />
-      <Footer />
+      <ClickSpark sparkColor="#f97316" sparkSize={8} sparkRadius={20} sparkCount={8} duration={400}>
+        <Header />
+        <Outlet />
+        <Footer />
+      </ClickSpark>
     </div>
   );
 }

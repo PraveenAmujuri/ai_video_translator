@@ -41,3 +41,52 @@ html.dark body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Custom scrollbar utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.45);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.25) transparent;
+}
+
+/* Dynamic responsive background grids */
+.grid-bg-dark {
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+.grid-bg-light {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+@media (max-width: 640px) {
+  .grid-bg-dark {
+    background-image: 
+      linear-gradient(rgba(59, 130, 246, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.035) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .grid-bg-light {
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.018) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
