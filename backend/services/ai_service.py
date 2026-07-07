@@ -20,11 +20,8 @@ from pydantic import BaseModel, Field
 _piper_models = {}
 _model_lock = asyncio.Lock()
 
-MODEL_REGISTRY = {
-    "en": "models/en_US-lessac-medium.onnx",
-    "hi": "models/hi_IN-rohan-medium.onnx",
-    "te": "models/te_IN-maya-medium.onnx",
-}
+# Dynamically populated voice registry on startup
+VOICE_REGISTRY = {}
 
 
 class Segment(BaseModel):
@@ -151,38 +148,127 @@ Return the result strictly as a JSON object matching the requested schema.
 # PIPER TTS
 # -----------------------------
 
-async def get_piper_voice(lang_code: str):
-
+async def get_piper_voice_by_path(model_path: str):
     from piper.voice import PiperVoice
-
     global _piper_models
-
+    
     async with _model_lock:
+        if model_path not in _piper_models:
+            logger.info(f"Loading Piper model: {model_path}")
+            _piper_models[model_path] = PiperVoice.load(model_path)
+            
+    return _piper_models[model_path]
 
-        if lang_code not in _piper_models:
+def scan_voices():
+    global VOICE_REGISTRY
+    from piper.voice import PiperVoice
+    
+    base_dir = Path(__file__).parent.parent / "models"
+    logger.info(f"Scanning directory for Piper voices: {base_dir.resolve()}")
+    if not base_dir.exists():
+        logger.warning(f"Models directory not found: {base_dir.resolve()}")
+        return
 
-            model_path = MODEL_REGISTRY.get(
-                lang_code,
-                MODEL_REGISTRY["en"],
-            )
+    # Find all .onnx files recursively
+    onnx_files = list(base_dir.glob("**/*.onnx"))
+    logger.info(f"Found {len(onnx_files)} potential voice files during scan.")
+    
+    for onnx_path in onnx_files:
+        json_path = onnx_path.with_suffix(".onnx.json")
+        if not json_path.exists():
+            logger.warning(f"Skipping voice {onnx_path.name}: missing config file {json_path.name}")
+            continue
+            
+        base_name = onnx_path.stem
+        parts = base_name.split("-")
+        if len(parts) < 3:
+            logger.warning(f"Skipping voice {onnx_path.name}: filename does not match expected format {{locale}}-{{name}}-{{quality}}")
+            continue
+            
+        locale = parts[0]
+        voice_name = parts[1]
+        quality = parts[2]
+        lang_family = locale.split("_")[0].lower()
+        
+        try:
+            logger.info(f"Validating model load for: {base_name}")
+            test_voice = PiperVoice.load(str(onnx_path))
+            
+            # Perform basic synthesis test
+            chunks = list(test_voice.synthesize("test"))
+            if not chunks:
+                raise ValueError("Synthesizer returned no chunks")
+                
+            lang_names = {
+                "en": "English", "hi": "Hindi", "te": "Telugu", "ta": "Tamil", "kn": "Kannada",
+                "ml": "Malayalam", "bn": "Bengali", "mr": "Marathi", "gu": "Gujarati",
+                "pa": "Punjabi", "or": "Odia", "as": "Assamese", "ur": "Urdu",
+                "es": "Spanish", "fr": "French", "de": "German", "it": "Italian",
+                "pt": "Portuguese", "zh": "Chinese", "ko": "Korean", "ru": "Russian",
+                "ar": "Arabic", "tr": "Turkish", "id": "Indonesian", "vi": "Vietnamese",
+                "nl": "Dutch", "pl": "Polish"
+            }
+            
+            genders = {
+                "rohan": "Male", "pratham": "Male", "priyamvada": "Female",
+                "maya": "Female", "padmavathi": "Female", "venkatesh": "Male",
+                "arjun": "Male", "meera": "Female", "fasih": "Male",
+                "lessac": "Male", "amy": "Female", "ryan": "Male", "alan": "Male", "cori": "Female",
+                "davefx": "Male", "ald": "Male", "daniela": "Female", "siwis": "Female", "tom": "Male",
+                "thorsten": "Male", "paola": "Female", "jeff": "Male", "tugão": "Male", "huayan": "Female",
+                "chaowen": "Male", "irina": "Female", "denis": "Male", "kareem": "Male", "dfki": "Male",
+                "news_tts": "Male", "vais1000": "Male", "alex": "Male", "nathalie": "Female", "gosia": "Female"
+            }
+            gender = genders.get(voice_name.lower(), "Unknown")
+            lang_name = lang_names.get(lang_family, lang_family.upper())
+            
+            if lang_family not in VOICE_REGISTRY:
+                VOICE_REGISTRY[lang_family] = {
+                    "default": base_name,
+                    "voices": {}
+                }
+                
+            preferred_defaults = {
+                "en": "en_US-lessac-medium",
+                "hi": "hi_IN-rohan-medium",
+                "te": "te_IN-maya-medium",
+                "ml": "ml_IN-meera-medium",
+                "ur": "ur_PK-fasih-medium",
+                "es": "es_ES-davefx-medium",
+                "fr": "fr_FR-siwis-medium",
+                "de": "de_DE-thorsten-medium",
+                "it": "it_IT-paola-medium",
+                "pt": "pt_BR-jeff-medium",
+                "zh": "zh_CN-huayan-medium",
+                "ru": "ru_RU-irina-medium",
+                "ar": "ar_JO-kareem-medium",
+                "tr": "tr_TR-dfki-medium",
+                "id": "id_ID-news_tts-medium",
+                "vi": "vi_VN-vais1000-medium",
+                "nl": "nl_NL-alex-medium",
+                "pl": "pl_PL-gosia-medium"
+            }
+            
+            is_default = preferred_defaults.get(lang_family) == base_name
+            if is_default or not VOICE_REGISTRY[lang_family]["default"]:
+                VOICE_REGISTRY[lang_family]["default"] = base_name
 
-            if not Path(model_path).exists():
+            VOICE_REGISTRY[lang_family]["voices"][base_name] = {
+                "language": lang_name,
+                "locale": locale,
+                "display_name": f"{voice_name.capitalize()} ({gender})",
+                "gender": gender,
+                "quality": quality,
+                "default": is_default,
+                "model_path": str(onnx_path),
+                "config_path": str(json_path)
+            }
+            logger.info(f"Registered voice: {base_name} successfully.")
+        except Exception as e:
+            logger.warning(f"Failed to register voice {base_name}: model load or synthesis test failed: {e}")
 
-                logger.warning(
-                    f"Model not found: {model_path}"
-                )
-
-                model_path = MODEL_REGISTRY["en"]
-
-            logger.info(
-                f"Loading Piper model: {model_path}"
-            )
-
-            _piper_models[lang_code] = PiperVoice.load(
-                model_path
-            )
-
-    return _piper_models[lang_code]
+# Run voice scanning on module import
+scan_voices()
 
 async def generate_tts_audio(
     segments,
@@ -199,11 +285,37 @@ async def generate_tts_audio(
         exist_ok=True,
     )
 
-    lang_code = voice.split("-")[0].lower()
-
-    voice_model = await get_piper_voice(
-        lang_code
-    )
+    # Dynamic Voice Resolution
+    voice_key = voice.lower()
+    found_voice = None
+    
+    # 1. Check direct voice key match (e.g. en_US-lessac-medium)
+    for lang, lang_entry in VOICE_REGISTRY.items():
+        for v_key, v_meta in lang_entry["voices"].items():
+            if v_key.lower() == voice_key:
+                found_voice = v_meta
+                break
+        if found_voice:
+            break
+            
+    # 2. Check language default fallback (e.g. "en", "hi", "te")
+    if not found_voice:
+        lang_family = voice.split("-")[0].split("_")[0].lower()
+        if lang_family in VOICE_REGISTRY:
+            default_key = VOICE_REGISTRY[lang_family]["default"]
+            found_voice = VOICE_REGISTRY[lang_family]["voices"][default_key]
+            
+    # 3. Last-resort English fallback
+    if not found_voice:
+        logger.error(f"Requested voice/language '{voice}' is not supported. Checking default fallback.")
+        if "en" in VOICE_REGISTRY:
+            default_key = VOICE_REGISTRY["en"]["default"]
+            found_voice = VOICE_REGISTRY["en"]["voices"][default_key]
+            
+    if not found_voice:
+        raise ValueError(f"Language or voice '{voice}' is not supported by the server, and no English fallback is available.")
+        
+    voice_model = await get_piper_voice_by_path(found_voice["model_path"])
 
     loop = asyncio.get_event_loop()
 
@@ -416,30 +528,39 @@ async def generate_tts_audio(
 # -----------------------------
 
 async def get_available_voices() -> List[Dict]:
-
-    return [
-        {
-            "name": "en",
-            "display_name": "English",
-            "locale": "en-US",
-            "language": "en",
-            "gender": "Female",
+    global VOICE_REGISTRY
+    voices_list = []
+    
+    # 1. Add legacy/default language codes for backward compatibility (e.g. "en", "hi", "te")
+    for lang, lang_entry in VOICE_REGISTRY.items():
+        default_key = lang_entry["default"]
+        default_voice = lang_entry["voices"][default_key]
+        voices_list.append({
+            "name": lang,
+            "display_name": f"{default_voice['language']} (Default)",
+            "locale": default_voice["locale"],
+            "language": lang,
+            "gender": default_voice["gender"],
             "neural": True,
-        },
-        {
-            "name": "hi",
-            "display_name": "Hindi",
-            "locale": "hi-IN",
-            "language": "hi",
-            "gender": "Male",
-            "neural": True,
-        },
-        {
-            "name": "te",
-            "display_name": "Telugu",
-            "locale": "te-IN",
-            "language": "te",
-            "gender": "Female",
-            "neural": True,
-        },
-    ]
+            "default": True,
+            "quality": default_voice["quality"],
+            "model_path": default_voice["model_path"],
+            "config_path": default_voice["config_path"]
+        })
+        
+        # 2. Add each individual registered voice specifically
+        for v_key, v_meta in lang_entry["voices"].items():
+            voices_list.append({
+                "name": v_key,
+                "display_name": f"{v_meta['language']} - {v_meta['display_name']}",
+                "locale": v_meta["locale"],
+                "language": lang,
+                "gender": v_meta["gender"],
+                "neural": True,
+                "default": v_meta["default"],
+                "quality": v_meta["quality"],
+                "model_path": v_meta["model_path"],
+                "config_path": v_meta["config_path"]
+            })
+            
+    return voices_list
