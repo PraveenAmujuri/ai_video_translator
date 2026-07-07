@@ -17,6 +17,10 @@ export function VoiceSelect({
     ? value
     : (voices[0]?.code ?? "");
 
+  // Extract language family to route voice previews correctly
+  const langFamily = safeValue.split("-")[0]?.split("_")[0]?.toLowerCase() || "en";
+  const previewUrl = safeValue ? `/voice-previews/${langFamily}/${safeValue}.mp3` : "";
+
   return (
     <div className="field">
       <label htmlFor="voice-select" className="field-label">Voice</label>
@@ -39,6 +43,18 @@ export function VoiceSelect({
           )}
         </select>
       </div>
+
+      {/* Simple normal browser native audio player for desktop app */}
+      {previewUrl && voices.length > 0 && (
+        <div style={{ marginTop: "12px", width: "100%" }}>
+          <audio
+            key={safeValue}
+            controls
+            src={previewUrl}
+            style={{ width: "100%", height: "32px", display: "block" }}
+          />
+        </div>
+      )}
     </div>
   );
 }

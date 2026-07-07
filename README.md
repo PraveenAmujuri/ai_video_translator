@@ -1,16 +1,21 @@
 # EchoX — AI Video Translator & Dubbing Suite
 
-> Translate videos into other languages while keeping the original speech speed and timing.
+> Translate videos into other languages while keeping the original speech speed, timing, and background music.
 
-EchoX is a video translation and dubbing application. It automatically transcribes, translates, and adds new voiceovers to video and audio files. It uses the Gemini API to transcribe and translate the speech, and uses offline Piper TTS neural voices to generate the new spoken audio. The final output has timed voiceovers and subtitles in multiple languages.
+EchoX is a complete video translation and dubbing application. It automatically transcribes, translates, and adds new voiceovers to video and audio files. It uses the Gemini API to transcribe and translate the speech, and uses offline, high-quality neural Piper TTS voices to generate the new spoken audio. The final output features timed voiceovers and subtitles in multiple languages, with background music and sound effects preserved locally using ONNX source separation.
+
+> [!NOTE]
+> For detailed developer guides and system workflows, please refer to [TECHNICAL_DOCUMENTATION.md](file:///c:/Users/saipr/Downloads/ai_video_translator/TECHNICAL_DOCUMENTATION.md) and [SYSTEM_DESIGN.md](file:///c:/Users/saipr/Downloads/ai_video_translator/SYSTEM_DESIGN.md).
 
 ---
 
 ## Overview
 
-Translating videos into different languages is usually a slow and expensive process done by hand. EchoX makes this easy by automating the whole process. You can upload a video file or paste a YouTube link. EchoX will then extract the audio, convert the speech to text, translate it, and generate a new voice track in the target language.
+Translating videos into different languages is usually a slow and expensive process done by hand. EchoX makes this easy by automating the entire process. You can upload a video file or paste a streaming video link. EchoX will then extract the audio, convert the speech to text, translate it, generate a new voice track in the target language, and merge it with the original video.
 
-EchoX keeps the speaker's speed and timing correct by adjusting the voiceover speed automatically so it matches the original video. This is useful for:
+EchoX keeps the speaker's speed and timing correct by adjusting the voiceover speed automatically so it matches the original video. On desktop, background sounds (like music and ambient noise) are separated from the vocals locally using ONNX Runtime, allowing you to replace the speech while preserving the music and sound effects.
+
+EchoX is ideal for:
 * **Creators and Teachers**: Translating lectures and tutorials to reach viewers worldwide.
 * **Marketers**: Quickly translating product demos and social media videos.
 * **Translation Teams**: Speeding up video and audio translation work.
@@ -21,27 +26,29 @@ EchoX keeps the speaker's speed and timing correct by adjusting the voiceover sp
 
 ### Web App
 * **Easy Uploads**: Drag and drop video or audio files up to 200MB.
-* **YouTube Support**: Paste a YouTube link to download and translate it automatically.
-* **Polish Design**: Custom dropdowns that show upcoming languages but keep them disabled until they are ready.
-* **Smooth Visuals**: Sleek layout with hover effects, glass-like inputs, and clean text selection highlights.
+* **Stream Video Support**: Paste streaming video links to download and translate them automatically.
+* **Responsive Visuals**: Sleek layout with hover effects, glass-like inputs, and clean text selection highlights.
+* **Premium Voice Player**: A fully interactive light/dark mode audio card widget with non-linear equalizer waves and a spinning vinyl disc.
 
-### Desktop App
+### Desktop App (Tauri)
 * **Lightweight Tauri App**: Small file size (under 30MB) compared to normal 150MB+ Electron apps.
+* **Local Background Music Preservation**: Offline CPU-based audio source separation via ONNX Runtime to separate vocals from backing tracks.
 * **Local History**: Saves your previous translation jobs offline in a local SQLite database.
 * **Live Logs**: Shows backend events and console status updates in real-time.
 * **Simple Sidebar**: Clean sidebar layout to change settings and navigate the app.
+* **Native Audio Player**: Seamless native browser playback widget integrated directly below the voice dropdown.
 
 ### Core Translation Pipeline
 * **Single-Step AI Processing**: Uploads audio to the Gemini API to get both transcription and translation in one step.
 * **Offline Voice Generation**: Uses Piper TTS ONNX models to speak the translated text locally without needing internet.
-* **Keep Background Sounds**: Uses FFmpeg to mix the new voice track while keeping the original video's music and sound effects playing softly in the background.
+* **Background Sounds Preservation**: Uses Demucs-based ONNX model to split music and vocals, then uses FFmpeg to master and blend the audio.
 * **Fast Video Streaming**: Splits the output video into small segments (HLS) so it plays instantly in the browser without buffering.
 
 ---
 
 ## Architecture
 
-EchoX uses a client-server structure. The frontend (Vite + React Web App or Tauri Desktop App) sends requests to the FastAPI Python Backend. The backend runs heavy tasks like audio extraction and translation in the background.
+EchoX uses a client-server structure. The frontend (Vite + React Web App or Tauri Desktop App) sends requests to the FastAPI Python Backend. The backend runs heavy tasks like audio extraction, source separation, and translation in the background.
 
 ```mermaid
 graph TD
@@ -60,17 +67,19 @@ graph TD
   end
 
   subgraph External [External APIs]
-    Gemini[Google GenAI API <br> gemini-3.1-flash-lite]
+    Gemini[Google GenAI API <br> gemini-1.5-flash]
   end
 
   subgraph Engine [Local Core Processing Engines]
     YTDLP[yt-dlp Stream Downloader]
+    ONNX[ONNX Runtime Source Separation]
     Piper[Piper TTS Speech Generator]
     FFmpeg[FFmpeg Media Mixer]
   end
 
   Worker <--> |Get Transcripts & Translations| Gemini
-  Worker --> |Download YouTube Videos| YTDLP
+  Worker --> |Download Streaming Videos| YTDLP
+  Worker --> |Separate Music from Vocals| ONNX
   Worker --> |Create Voice Segments| Piper
   Worker --> |Mix & Convert Video| FFmpeg
 ```
@@ -93,7 +102,7 @@ graph TD
 | Technology | Version | Purpose |
 | :--- | :--- | :--- |
 | **FastAPI** | `^0.115.0` | Python web framework |
-| **Pydantic** | `^2.10.0` | Data checking and cleanup |
+| **Pydantic** | `^2.10.0` | Data checking and validation |
 | **SQLAlchemy** | `^2.0.0` | Python database manager |
 | **Aiosqlite** | `^0.20.0` | Async SQLite database driver |
 | **Uvicorn** | `^0.34.0` | Web server |
@@ -111,7 +120,8 @@ graph TD
 | :--- | :--- | :--- |
 | **Google GenAI SDK**| `^0.1.0` | Python client library for Gemini |
 | **Piper TTS** | `^1.2.0` | Local speech generator (ONNX) |
-| **Gemini Flash Lite**| `3.1` | Audio transcription and translation model |
+| **Gemini 1.5 Flash** | `1.5` | Audio transcription and translation model |
+| **ONNX Runtime** | `^1.16.0` | Local audio source separation (vocal split) |
 
 ### Other Tools
 | Tool | Purpose |
@@ -130,13 +140,13 @@ ai_video_translator/
 ├── backend/                  # FastAPI Python backend
 │   ├── api/                  # API endpoints and routes
 │   ├── core/                 # App configurations and database setup
-│   ├── models/               # Database tables and Piper ONNX voice models
-│   ├── services/             # Core logic (AI translation, FFmpeg commands)
+│   ├── models/               # Database tables and schemas
+│   ├── services/             # Core logic (AI translation, ONNX separation)
 │   ├── workers/              # Background task runner loops
 │   ├── main.py               # Main backend entry point
 │   └── Dockerfile            # Docker image configuration
 ├── frontend/                 # React Web frontend
-│   ├── public/               # Static images and icons
+│   ├── public/               # Static images and voice previews
 │   ├── src/                  # React views, styles, and components
 │   └── vercel.json           # Vercel routing configuration
 ├── EchoXDesktop/             # Tauri desktop wrapper
@@ -148,36 +158,38 @@ ai_video_translator/
 
 ---
 
-## AI Translation Steps
+## AI Translation & Processing Pipeline
 
 The translation and dubbing process runs in the background on the server:
 
 ```
-[User Input] ──> [Extract Audio] ──> [AI Translate] ──> [Generate Voice] ──> [Mix & Export]
+[User Input] ──> [Extract Audio] ──> [ONNX Split] ──> [AI Translate] ──> [Generate Voice] ──> [Mix & Export]
 ```
 
 ### 1. Extract Audio
-* **YouTube**: `yt-dlp` extracts the video and audio streams directly.
+* **Streams**: `yt-dlp` extracts the video and audio streams directly.
 * **Files**: If you upload a video file, FFmpeg extracts the sound into a high-quality WAV audio file.
 
-### 2. Speech Transcription & Translation
-* The audio file is sent to the Gemini API.
-* In a single query, `gemini-3.1-flash-lite` transcribes the audio, translates it, and splits it into timed segments.
-* The API returns clean JSON data with start/end times and the translated text.
+### 2. Local Background Music Separation (Desktop App)
+* If enabled, the audio is processed locally using a Demucs-based ONNX model running on ONNX Runtime.
+* The model separates vocals from the backing track, leaving a clean vocal track for transcription and a clean backing track for mixing.
 
-### 3. Subtitles
+### 3. Speech Transcription & Translation
+* The vocal audio track is sent to the Gemini API.
+* In a single query, `gemini-1.5-flash` transcribes the audio, translates it, and splits it into timed segments.
+* The API returns clean JSON data containing start/end times and the translated text.
+
+### 4. Subtitles
 * The backend saves the timed segments into **SRT** and **WebVTT** subtitle files.
 
-### 4. Generate Voice (Offline TTS)
-* **Piper** reads each translated text segment aloud. It uses local voice models:
-  * English: `en_US-lessac-medium.onnx`
-  * Hindi: `hi_IN-rohan-medium.onnx`
-  * Telugu: `te_IN-maya-medium.onnx`
+### 5. Generate Voice (Offline TTS)
+* **Piper** reads each translated text segment aloud using local voice models. Supported languages include:
+  * English (`en_US`), Hindi (`hi_IN`), Telugu (`te_IN`), Malayalam (`ml_IN`), Urdu (`ur_PK`), Spanish (`es_ES`), French (`fr_FR`), German (`de_DE`), Italian (`it_IT`), Portuguese (`pt_BR`), Chinese (`zh_CN`), Russian (`ru_RU`), Arabic (`ar_JO`), Turkish (`tr_TR`), Indonesian (`id_ID`), Vietnam (`vi_VN`), Dutch (`nl_NL`), Polish (`pl_PL`).
 * FFmpeg stretches or compresses the generated audio segments so they match the original speaker's start and end times.
 
-### 5. Mix & Export Video
+### 6. Mix & Export Video
 * The new voice segments are put together into a single audio track.
-* If enabled, the original background sounds (like music and ambient noise) are mixed back in at a lower volume.
+* If enabled, the original background sounds (like music and ambient noise) are mixed back in.
 * The final audio is merged with the video.
 * FFmpeg saves the final output as an MP4 file, and splits it into HLS segments for fast streaming in the web browser.
 
@@ -185,7 +197,7 @@ The translation and dubbing process runs in the background on the server:
 
 ## Installation
 
-### What You Need
+### Prerequisites
 * **Python**: `3.10` or higher
 * **Node.js**: `18.x` or higher
 * **FFmpeg**: Installed and added to your system path (needed to process audio and video)
@@ -271,7 +283,7 @@ CORS_ORIGINS=["http://localhost:3000","http://localhost:5173","http://localhost"
 | `/voices` | `GET` | Details on active voice models |
 | `/upload` | `POST` | Upload video/audio file (returns a `job_id`) |
 | `/translate-stream`| `POST` | Upload and trigger a dubbing job |
-| `/translate` | `POST` | Trigger a dubbing job using a YouTube URL |
+| `/translate` | `POST` | Trigger a dubbing job using a streaming URL |
 | `/progress/{job_id}`| `GET` | Get job status, progress percentage, and output URLs |
 | `/stream/{job_id}` | `GET` | Stream video using HLS (`playlist.m3u8`) |
 | `/subtitles/{job_id}`| `GET` | Download subtitle files (WebVTT or SRT) |
@@ -279,24 +291,15 @@ CORS_ORIGINS=["http://localhost:3000","http://localhost:5173","http://localhost"
 
 ---
 
-## Deployment
+## Deployment & Production
 
 ### Frontend (Web App)
-* Hosted on **Vercel**. It uses routing rules to redirect all clean subpaths (like `/features` or `/docs`) back to `index.html` so client-side routing works smoothly.
+* **Status**: Deployed and active at [https://echox.praveenai.tech/](https://echox.praveenai.tech/).
+* **Platform**: Hosted on **Vercel** with client-side subpath URL rewrites configured in `vercel.json`.
 
-### Backend
-* Packaged as a **Docker** container. It runs on cloud servers with process managers to start up automatically on reboot.
+### Backend (FastAPI Application)
+* **Platform**: Deployed on **Oracle Cloud**.
+* **CI/CD Workflows**: Automatically managed, tested, and redeployed via **GitHub Actions** workflows on every code push.
 
-### Desktop Client
-* Compiled into installer packages (Windows `.msi`, macOS `.app`, Linux `.deb`) using the Tauri CLI (`npm run tauri build`).
-
----
-
-## Technical Implementations
-
-* **Background Processing**: Media tasks run in background threads so they do not slow down web requests.
-* **Lightweight Desktop wrapper**: Tauri uses native system web views, which saves memory compared to Electron.
-* **Single-Query AI Pipeline**: The backend sends the audio file to the Gemini API to transcribe, translate, and segment it in a single pass.
-* **Local Speech Synthesis**: Piper TTS runs locally, generating speech voices offline without third-party API costs.
-* **Background Audio Mixing**: FFmpeg filters are used to blend original background tracks with newly synthesized voices.
-* **Smooth Video Streaming**: Video outputs are split into HLS stream segments for immediate playback.
+### Desktop Client Installers
+* **Releases**: Compiled desktop installers (Windows, macOS, Linux) are published under [GitHub Releases v1.0.0](https://github.com/PraveenAmujuri/ai_video_translator/releases/tag/v1.0.0).

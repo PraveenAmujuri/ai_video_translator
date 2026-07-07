@@ -1212,7 +1212,7 @@ export default function EchoXFeaturesPage() {
           </F>
           <F delay={0.13}>
             <p className="hero-body">
-              Translate videos in your browser or run the pipeline natively on your system. EchoX handles audio extraction, language translation, and voice synthesis in one unified workflow.
+              Translate videos in your browser or run the pipeline natively on your system. EchoX handles audio extraction, AI translation, local ONNX background music preservation, voice synthesis, and final audio mastering in one unified workflow.
             </p>
           </F>
           <F delay={0.19}>
@@ -1264,7 +1264,7 @@ export default function EchoXFeaturesPage() {
                 fig: "FIG 0.2",
                 art: <IllustrationLayers/>,
                 name: "Targeted voice synthesis",
-                body: "Convert your media into clear, translated speech. Choose from natural target voices to ensure your dubbed track is clear, with options optimized for regional languages."
+                body: "Convert your media into clear, translated speech. Choose from multiple high-quality neural Piper voices and regional variants to ensure your dubbed track is clear, with options optimized for regional and Indic languages."
               },
               {
                 fig: "FIG 0.3",
@@ -1276,7 +1276,7 @@ export default function EchoXFeaturesPage() {
                 fig: "FIG 0.4",
                 art: <IllustrationSpeed/>,
                 name: "Hardware-driven control",
-                body: "Run processing pipelines on your own hardware resources. The desktop app provides persistent translation history, offline execution, and local database control."
+                body: "Run processing pipelines on your own hardware resources. The desktop app provides offline CPU-based audio separation via ONNX Runtime, local FFmpeg mastering, persistent translation history, and local database management."
               },
             ].map(({ fig, art, name, body }, i) => (
               <F key={i} delay={[0, 0.07, 0.13][i]}>
@@ -1312,10 +1312,10 @@ export default function EchoXFeaturesPage() {
                 </p>
                 <div className="feat-details">
                   {[
-                    "Generate target speech tracks in English, Hindi, Telugu, Tamil, and Japanese.",
+                    "Generate target speech across major international and regional languages with multiple voice options and regional variants.",
                     "Start instantly as the engine automatically detects the language in your source media.",
                     "Export matching subtitle files that align perfectly with the new voice track.",
-                    "Keep the feel of the original media by blending dubbed speech with background music.",
+                    "Keep the feel of the original media by preserving background music via on-device ONNX source separation.",
                   ].map((t, i) => (
                     <div className="feat-detail" key={i}>
                       <span className="feat-detail-pip"/>
@@ -1396,7 +1396,7 @@ export default function EchoXFeaturesPage() {
                   </div>
                   <h3 className="text-xl font-bold mb-3 tracking-tight text-white">Voice Dubbing &amp; Mix</h3>
                   <p className="text-xs text-neutral-400 leading-relaxed">
-                    <strong className="text-neutral-200">Local TTS execution.</strong> Dub original media using local Piper ONNX voice profiles. Blends speech tracks with background audio tracks locally.
+                    <strong className="text-neutral-200">Local TTS &amp; mastering.</strong> Dub original media using local Piper ONNX voice profiles. Blends speech tracks with separated background audio tracks locally via FFmpeg mixing.
                   </p>
                 </div>
                 <div className="flex justify-between items-center text-[10px] font-mono text-neutral-500 mt-6 border-t border-neutral-800/60 pt-4">
@@ -1535,12 +1535,17 @@ export default function EchoXFeaturesPage() {
                     <tr className="pixel-compare-row">
                       <td className="pixel-compare-td pixel-compare-feature">Voices & Dubbing</td>
                       <td className="pixel-compare-td pixel-compare-others-val">Choose target languages and select AI voices</td>
-                      <td className="pixel-compare-td pixel-compare-our-val">Includes all Web Application capabilities</td>
+                      <td className="pixel-compare-td pixel-compare-our-val">Multiple high-quality neural Piper voices per language with regional variants</td>
                     </tr>
                     <tr className="pixel-compare-row">
                       <td className="pixel-compare-td pixel-compare-feature">Local Processing</td>
-                      <td className="pixel-compare-td pixel-compare-others-val">Capped cloud server API resources</td>
-                      <td className="pixel-compare-td pixel-compare-our-val">Local CPU/GPU hardware resource processing</td>
+                      <td className="pixel-compare-td pixel-compare-others-val">Capped cloud server API resources and basic mixing</td>
+                      <td className="pixel-compare-td pixel-compare-our-val">Local CPU processing with ONNX Runtime, background audio preservation, and FFmpeg mastering.</td>
+                    </tr>
+                    <tr className="pixel-compare-row">
+                      <td className="pixel-compare-td pixel-compare-feature">Preserve BGM & Effects</td>
+                      <td className="pixel-compare-td pixel-compare-others-val">Basic volume-balancing audio preservation</td>
+                      <td className="pixel-compare-td pixel-compare-our-val">Preserves background music and ambient sounds while replacing spoken dialogue</td>
                     </tr>
                     <tr className="pixel-compare-row">
                       <td className="pixel-compare-td pixel-compare-feature">Job History</td>

@@ -126,8 +126,7 @@ export default function VoiceSelector({
       </h2>
 
       <div className="relative" ref={containerRef}>
-        <button
-          type="button"
+        <div
           onClick={() => setIsOpen(!isOpen)}
           className="
             w-full
@@ -142,23 +141,23 @@ export default function VoiceSelector({
             text-black
             dark:text-white
             backdrop-blur-xl
-            outline-none
+            flex
+            items-center
+            justify-between
             transition-all
             duration-300
             hover:border-black/20
             dark:hover:border-white/20
-            flex
-            items-center
-            justify-between
             cursor-pointer
-            text-left
           "
         >
-          <span>
-            {activeVoice.label} <span className="opacity-40 mx-1.5">•</span> {activeVoice.gender} <span className="opacity-40 mx-1.5">•</span> <span className="text-xs px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">{activeVoice.region}</span>
-          </span>
+          <div className="flex items-center flex-1 min-w-0 mr-2">
+            <div className="flex-1 truncate text-left">
+              {activeVoice.label} <span className="opacity-40 mx-1.5">•</span> {activeVoice.gender} <span className="opacity-40 mx-1.5">•</span> <span className="text-xs px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-black/70 dark:text-white/70">{activeVoice.region}</span>
+            </div>
+          </div>
           <svg
-            className={`w-4 h-4 transition-transform duration-200 opacity-60 ${
+            className={`w-4 h-4 transition-transform duration-200 opacity-60 shrink-0 ${
               isOpen ? "rotate-180" : ""
             }`}
             fill="none"
@@ -168,7 +167,7 @@ export default function VoiceSelector({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
-        </button>
+        </div>
 
         {isOpen && (
           <div
@@ -216,10 +215,10 @@ export default function VoiceSelector({
                   dark:text-white
                 "
               >
-                <span>
+                <span className="truncate">
                   {v.label} <span className="opacity-40 mx-1.5">•</span> {v.gender}
                 </span>
-                <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400">
+                <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 shrink-0">
                   {v.region}
                 </span>
               </div>

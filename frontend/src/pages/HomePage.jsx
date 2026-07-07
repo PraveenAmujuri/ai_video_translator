@@ -7,6 +7,7 @@ import VideoPlayer from "../components/VideoPlayer";
 import ProgressTracker from "../components/ProgressTracker";
 import LanguageSelector from "../components/LanguageSelector";
 import VoiceSelector from "../components/VoiceSelector";
+import VoicePlayer from "../components/VoicePlayer";
 import HeroSection from "../components/HeroSection";
 
 export default function HomePage() {
@@ -101,7 +102,7 @@ export default function HomePage() {
         />
 
         <motion.section 
-          className="grid grid-cols-1 md:grid-cols-2 gap-10"
+          className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-30"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.15 }}
@@ -117,6 +118,20 @@ export default function HomePage() {
               targetLanguage={language}
             />
           </div>
+        </motion.section>
+
+        <motion.section
+          className="mt-10 relative z-20"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.15 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <VoicePlayer
+            voice={voice}
+            language={language}
+            setVoice={setVoice}
+          />
         </motion.section>
 
         <motion.section

@@ -326,7 +326,7 @@ export default function App() {
               </section>
 
               {/* 1. Source Input Panel and Control Configuration Panel sit directly above trackers */}
-              <section className="bento">
+              <section className="bento" style={{ position: "relative", zIndex: 30 }}>
                 <div className="bento-col">
                   <SourcePanel
                     onFileReady={handleFileReady}

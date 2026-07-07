@@ -33,7 +33,7 @@ const DOC_SECTIONS = [
       subsections: [
         {
           title: "Installation",
-          text: "Download the latest installer from the releases page. Run the executable — EchoX requires no additional dependencies. Windows 10 or later is supported.",
+          text: "Download the latest installer from the releases page. Run the executable — EchoX dynamically downloads and configures the required AI models on first launch without requiring additional dependencies. Windows 10 or later is supported.",
         },
         {
           title: "System requirements",
@@ -41,12 +41,12 @@ const DOC_SECTIONS = [
             "Windows 10 64-bit or later",
             "8 GB RAM (16 GB recommended)",
             "GPU with Vulkan support (optional, for faster processing)",
-            "~500 MB disk space for the application",
+            "~500 MB disk space for the application (additional space required for on-device AI models)",
           ],
         },
         {
           title: "Quick start",
-          text: 'Launch EchoX. Click "Upload" to select a video file, or paste a YouTube URL. Choose your target language and voice. Click "Translate" and wait for the pipeline to complete.',
+          text: 'Launch EchoX. Click "Upload" to select a video file, or paste a YouTube URL. Choose your target language and voice variant from the custom registry. Click "Translate" and wait for the pipeline to complete.',
         },
       ],
     },
@@ -61,7 +61,7 @@ const DOC_SECTIONS = [
       subsections: [
         {
           title: "AI video translation",
-          text: "Upload any video file (MP4, MOV, AVI, MKV) and select a target language. EchoX transcribes the original audio, translates the content, and generates a dubbed version with synchronized timing.",
+          text: "Upload any video file (MP4, MOV, AVI, MKV) and select a target language. EchoX transcribes the original audio, translates the content, and generates a dubbed version with synchronized timing. On desktop, the pipeline executes CPU-based ONNX model source separation to split vocals from background audio, followed by local FFmpeg mixing to preserve background tracks.",
         },
         {
           title: "YouTube URL processing",
@@ -77,7 +77,7 @@ const DOC_SECTIONS = [
         },
         {
           title: "Multi-language support",
-          text: "Translate between dozens of language pairs. Supported languages include English, Spanish, Japanese, Telugu, Hindi, Mandarin Chinese, French, German, Korean, and many more.",
+          text: "Translate between dozens of language pairs. Supported languages include English, Spanish, Japanese, Telugu, Hindi, French, German, Portuguese, Malayalam, Urdu, Italian, Russian, Arabic, Turkish, Indonesian, Vietnamese, Dutch, Polish, and many more, backed by a dynamic backend voice registry.",
         },
       ],
     },
@@ -92,7 +92,7 @@ const DOC_SECTIONS = [
       subsections: [
         {
           title: "Voice selection",
-          text: "Browse a library of 40+ neural voices across supported languages. Each voice includes information about gender, regional dialect, and style (warm, crisp, soft, etc.).",
+          text: "Browse a library of high-quality Piper neural voices across supported languages and locales. The custom dropdown allows you to choose multiple voices per language, regional variants (such as US/UK English, Brazil/Portugal Portuguese), gender, and quality presets.",
         },
         {
           title: "Voice preview",
@@ -100,7 +100,7 @@ const DOC_SECTIONS = [
         },
         {
           title: "Processing",
-          text: "Voice generation runs entirely on your machine. Processing time depends on video length, selected voice complexity, and your hardware. A 10-minute video typically processes in 3–8 minutes on modern hardware.",
+          text: "Voice generation runs entirely on your machine using lazy-loading memory cache to optimize resources. Processing time depends on video length, selected voice complexity, and your hardware. A 10-minute video typically processes in 3–8 minutes on modern hardware.",
         },
       ],
     },
@@ -119,7 +119,7 @@ const DOC_SECTIONS = [
         },
         {
           title: "Offline operation",
-          text: "Translation and voice generation run locally using on-device AI models. An internet connection is only required for YouTube downloads and initial model downloads.",
+          text: "Translation, ONNX source separation, and voice generation run locally using on-device AI models. An internet connection is only required for YouTube downloads and initial model downloads.",
         },
         {
           title: "Automatic updates",
@@ -218,12 +218,12 @@ const DOC_SECTIONS = [
           title: "EchoX Desktop Natively",
           status: "Current",
           icon: <Monitor size={14} />,
-          desc: "We pivoted the system architecture to a native local model. EchoX Desktop runs yt-dlp locally as a subprocess, utilizing the client's residential IP network to avoid server-side 403 Forbidden blocks. This reduces backend download and processing costs, shifting transcription and voice generation workloads directly onto local client resources.",
-          diagram: "EchoX Desktop App (Tauri / Rust)\n   ↓ [Natively Spawns]\nyt-dlp (Residential IP) → local FFmpeg → local Whisper & Gemini (Translation) → local Piper TTS\n   ↓ [Minimal Infrastructure Dependency]\nDirect Output Video File",
+          desc: "We pivoted the system architecture to a native local model. EchoX Desktop runs yt-dlp locally as a subprocess, utilizing the client's residential IP network to avoid server-side 403 Forbidden blocks. Shifting transcription, on-device ONNX source separation, and voice generation workloads directly onto local client resources ensures complete offline rendering.",
+          diagram: "EchoX Desktop App (Tauri / Rust)\n   ↓ [Natively Spawns]\nyt-dlp (Residential IP) → ONNX Vocal/BGM Separation → local FFmpeg → local Whisper & Gemini (Translation) → local Piper TTS (Registry) → local FFmpeg Mix\n   ↓ [Minimal Infrastructure Dependency]\nDirect Output Video File",
           details: [
             "Avoids server-side datacenter blocks by routing downloads through the local residential connection.",
-            "Tauri wraps native yt-dlp binary calls safely with automatic updating layers.",
-            "Maintains minimal infrastructure dependencies, utilizing the cloud primarily for translation APIs."
+            "Tauri wraps native yt-dlp and CPU-based ONNX separation pipelines safely with automatic model installation.",
+            "Maintains minimal infrastructure dependencies, utilizing the cloud primarily for translation APIs and dynamic voice registry metadata."
           ]
         },
         {
