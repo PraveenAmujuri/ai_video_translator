@@ -255,6 +255,8 @@ async def _run_pipeline(job_id: str):
         await create_static_video(
             audio_path=translated_audio_path,
             output_video_path=output_path,
+            subtitle_path=srt_path if job.embed_subtitles else None,
+            language=job.target_language,
         )
         
         # Cleanup intermediate temp files to save space
@@ -294,6 +296,8 @@ async def _run_pipeline(job_id: str):
             output_path=output_path,
             preserve_background=preserve_background,
             background_volume=background_volume,
+            subtitle_path=srt_path if job.embed_subtitles else None,
+            language=job.target_language,
         )
 
         # Cleanup intermediate temp files to save space

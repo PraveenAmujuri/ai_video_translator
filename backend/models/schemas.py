@@ -54,6 +54,7 @@ class JobCreate(BaseModel):
     tts_volume: str = "+0%"
     preserve_background_audio: Union[bool, str] = False
     background_audio_volume: Union[float, str] = 0.3
+    embed_subtitles: Union[bool, str] = True
     video_stream_url: Optional[str] = None
 
     @field_validator("video_stream_url", mode="before")
@@ -64,7 +65,7 @@ class JobCreate(BaseModel):
         return value
 
     # NEW FORM-DATA RECONCILER VALIDATORS
-    @field_validator("preserve_background_audio", mode="before")
+    @field_validator("preserve_background_audio", "embed_subtitles", mode="before")
     @classmethod
     def reconcile_form_booleans(cls, value: any) -> bool:
         """Converts incoming multi-part string flags ('true'/'false') into actual python booleans."""

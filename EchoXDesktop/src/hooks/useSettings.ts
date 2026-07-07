@@ -10,6 +10,7 @@ export interface AppSettings {
   preserveBackgroundAudio: boolean;
   preserveBackgroundMusicEffects: boolean;
   backgroundAudioVolume: number;
+  embedSubtitles: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   preserveBackgroundAudio: false,
   preserveBackgroundMusicEffects: false,
   backgroundAudioVolume: 0.3,
+  embedSubtitles: true,
 };
 
 interface UseSettingsResult {
@@ -36,7 +38,8 @@ function isAppSettings(value: unknown): value is AppSettings {
     typeof v.defaultSourceLanguage === "string" &&
     typeof v.preserveBackgroundAudio === "boolean" &&
     (v.preserveBackgroundMusicEffects === undefined || typeof v.preserveBackgroundMusicEffects === "boolean") &&
-    typeof v.backgroundAudioVolume === "number"
+    typeof v.backgroundAudioVolume === "number" &&
+    (v.embedSubtitles === undefined || typeof v.embedSubtitles === "boolean")
   );
 }
 
@@ -53,6 +56,9 @@ function readStorage(): AppSettings {
     };
     if (merged.preserveBackgroundMusicEffects === undefined) {
       merged.preserveBackgroundMusicEffects = false;
+    }
+    if (merged.embedSubtitles === undefined) {
+      merged.embedSubtitles = true;
     }
     return merged;
   } catch {

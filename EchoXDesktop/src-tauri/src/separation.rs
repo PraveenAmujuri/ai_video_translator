@@ -564,6 +564,8 @@ pub async fn run_local_audio_mixing(
     dubbed_path: String,
     output_name: String,
     volume: f32,
+    embed_subtitles: bool,
+    target_language: String,
 ) -> Result<String, String> {
     let start_time = Instant::now();
     let temp_dir = std::env::temp_dir()
@@ -592,6 +594,12 @@ pub async fn run_local_audio_mixing(
         println!("[mixing] Self-healing: Overriding dubbed path from old job to current: {}", local_dubbed.display());
         resolved_dubbed_path = local_dubbed.to_str().unwrap().to_string();
     }
+
+    // Subtitle validation
+    let srt_path = temp_dir.join("subtitles.srt");
+    let has_srt = srt_path.exists();
+    let lang_meta = format!("language={}", target_language);
+    let title_meta = format!("title={} Subtitles", target_language.to_uppercase());
 
     // Let's determine target format
     let ext = Path::new(&output_path)
@@ -638,11 +646,31 @@ pub async fn run_local_audio_mixing(
             args.extend([
                 "-i", &video_path,
                 "-i", &resolved_dubbed_path,
+            ]);
+            if embed_subtitles && has_srt {
+                args.extend(["-i", srt_path.to_str().unwrap()]);
+            }
+            args.extend([
                 "-filter_complex", &filter_complex_str,
                 "-map", "0:v:0",
                 "-map", "[a]",
-                "-c:v", "copy",
-                "-c:a", "aac",
+            ]);
+            if embed_subtitles && has_srt {
+                args.extend([
+                    "-map", "2:s:0",
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-c:s", "mov_text",
+                    "-metadata:s:s:0", &lang_meta,
+                    "-metadata:s:s:0", &title_meta,
+                ]);
+            } else {
+                args.extend([
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                ]);
+            }
+            args.extend([
                 "-b:a", "192k",
                 "-shortest",
             ]);
@@ -669,11 +697,31 @@ pub async fn run_local_audio_mixing(
                 "-i", &video_path,
                 "-i", &resolved_dubbed_path,
                 "-i", &resolved_instrumental_path,
+            ]);
+            if embed_subtitles && has_srt {
+                args.extend(["-i", srt_path.to_str().unwrap()]);
+            }
+            args.extend([
                 "-filter_complex", &hq_filter_complex_val,
                 "-map", "0:v:0",
                 "-map", "[a]",
-                "-c:v", "copy",
-                "-c:a", "aac",
+            ]);
+            if embed_subtitles && has_srt {
+                args.extend([
+                    "-map", "3:s:0",
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-c:s", "mov_text",
+                    "-metadata:s:s:0", &lang_meta,
+                    "-metadata:s:s:0", &title_meta,
+                ]);
+            } else {
+                args.extend([
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                ]);
+            }
+            args.extend([
                 "-b:a", "192k",
                 "-shortest",
             ]);
@@ -735,6 +783,50 @@ pub async fn download_dubbed_voice(
     let mut file = fs::File::create(&dest_path)
         .await
         .map_err(|e| format!("Failed to create local dubbed file: {}", e))?;
+
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Stream read error: {}", e))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("File write error: {}", e))?;
+    }
+
+    file.flush()
+        .await
+        .map_err(|e| format!("Failed to flush file: {}", e))?;
+
+    Ok(dest_path.to_str().unwrap().to_string())
+}
+
+#[tauri::command]
+pub async fn download_job_subtitles(
+    _app: AppHandle,
+    job_id: String,
+) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir()
+        .join("EchoX")
+        .join("jobs")
+        .join(&job_id);
+
+    fs::create_dir_all(&temp_dir)
+        .await
+        .map_err(|e| format!("Failed to create job directory: {}", e))?;
+
+    let dest_path = temp_dir.join("subtitles.srt");
+
+    let download_url = format!("https://api.praveenai.tech/outputs/{}/subtitles.srt", job_id);
+    let client = reqwest::Client::new();
+    let response = client.get(&download_url).send().await
+        .map_err(|e| format!("Failed to connect to backend: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Backend returned status {}", response.status()));
+    }
+
+    let mut file = fs::File::create(&dest_path)
+        .await
+        .map_err(|e| format!("Failed to create local subtitle file: {}", e))?;
 
     let mut stream = response.bytes_stream();
     while let Some(chunk) = stream.next().await {

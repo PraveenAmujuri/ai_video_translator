@@ -39,7 +39,9 @@ export async function tauriRunLocalAudioMixing(
   instrumental_path: String,
   dubbed_path: String,
   output_name: String,
-  volume: number
+  volume: number,
+  embedSubtitles: boolean,
+  targetLanguage: string
 ): Promise<string> {
   return invoke<string>("run_local_audio_mixing", {
     jobId,
@@ -48,11 +50,17 @@ export async function tauriRunLocalAudioMixing(
     dubbedPath: dubbed_path,
     outputName: output_name,
     volume,
+    embedSubtitles,
+    targetLanguage,
   });
 }
 
 export async function tauriDownloadDubbedVoice(jobId: string): Promise<string> {
   return invoke<string>("download_dubbed_voice", { jobId });
+}
+
+export async function tauriDownloadJobSubtitles(jobId: string): Promise<string> {
+  return invoke<string>("download_job_subtitles", { jobId });
 }
 
 export async function tauriCleanupLocalJobFiles(jobId: string): Promise<void> {

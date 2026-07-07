@@ -51,14 +51,7 @@ export function ControlPanel({ options, onChange, disabled }: ControlPanelProps)
           disabled={disabled}
         />
 
-        <LanguageSelect
-          id="source-language"
-          label="Source language"
-          value={options.sourceLanguage}
-          options={SOURCE_LANGUAGES}
-          onChange={(code) => onChange({ ...options, sourceLanguage: code })}
-          disabled={disabled}
-        />
+
 
         <div 
           style={{ 
@@ -88,6 +81,41 @@ export function ControlPanel({ options, onChange, disabled }: ControlPanelProps)
               onChange({
                 ...options,
                 preserveBackgroundMusicEffects: !options.preserveBackgroundMusicEffects,
+              })
+            }
+          >
+            <span className="switch-thumb" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div 
+          style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between", 
+            marginTop: "12px", 
+            paddingTop: "12px", 
+            borderTop: "1px solid var(--line)" 
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px", paddingRight: "16px" }}>
+            <span style={{ fontSize: "12.5px", fontWeight: "500", color: "var(--text-primary)" }}>
+              Embed Subtitles
+            </span>
+            <span style={{ fontSize: "10.5px", color: "var(--text-tertiary)", lineHeight: "1.4" }}>
+              Embed subtitles as a selectable track in the final exported video.
+            </span>
+          </div>
+          <button
+            type="button"
+            className="switch"
+            role="switch"
+            disabled={disabled}
+            aria-checked={options.embedSubtitles ?? true}
+            onClick={() =>
+              onChange({
+                ...options,
+                embedSubtitles: options.embedSubtitles === undefined ? false : !options.embedSubtitles,
               })
             }
           >

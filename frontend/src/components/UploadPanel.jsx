@@ -15,6 +15,8 @@ export default function UploadPanel({
   language,
   voice,
   status, // Hooked directly to track App status
+  embedSubtitles = true,
+  setEmbedSubtitles,
 }) {
   const fileInputRef = useRef(null);
   const statusRef = useRef(status);
@@ -63,6 +65,7 @@ export default function UploadPanel({
     formData.append("tts_volume", "+0%");
     formData.append("preserve_background_audio", "false");
     formData.append("background_audio_volume", "0.3");
+    formData.append("embed_subtitles", embedSubtitles ? "true" : "false");
 
     try {
       setStatus("processing");
@@ -137,6 +140,7 @@ export default function UploadPanel({
         target_language: language,
         source_language: "auto",
         voice: voice,
+        embed_subtitles: embedSubtitles,
       });
 
       setJobId(res.data.job_id);

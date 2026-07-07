@@ -10,6 +10,7 @@ import {
   tauriRunLocalAudioSeparation,
   tauriRunLocalAudioMixing,
   tauriDownloadDubbedVoice,
+  tauriDownloadJobSubtitles,
   tauriCleanupLocalJobFiles,
 } from "../lib/tauri-commands";
 import type {
@@ -88,7 +89,9 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
       localSeparationActive: boolean = false,
       videoPath: string = "",
       instrumentalPath: string = "",
-      volume: number = 0.3
+      volume: number = 0.3,
+      embedSubtitles: boolean = true,
+      targetLanguage: string = "en"
     ) => {
       const abortController = new AbortController();
       pollAbortRef.current = abortController;
@@ -115,6 +118,19 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
               }));
               try {
                 const dubbedLocalWav = await tauriDownloadDubbedVoice(jobId);
+                
+                if (embedSubtitles) {
+                  setState((prev) => ({
+                    ...prev,
+                    logs: [...prev.logs, makeLog("Downloading subtitles for local video embedding...")],
+                  }));
+                  try {
+                    await tauriDownloadJobSubtitles(jobId);
+                  } catch (subErr) {
+                    console.error("Failed to download subtitles for local embedding:", subErr);
+                  }
+                }
+
                 setState((prev) => ({
                   ...prev,
                   logs: [...prev.logs, makeLog("Mastering and mixing local audio files...")],
@@ -127,7 +143,9 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                   instrumentalPath,
                   dubbedLocalWav,
                   outputName,
-                  volume
+                  volume,
+                  embedSubtitles,
+                  targetLanguage
                 );
                 localVideoUrl = convertFileSrc(localOutputPath);
                 setState((prev) => ({
@@ -290,7 +308,9 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
         localSeparationActive,
         filePath,
         instrumentalPath,
-        options.backgroundAudioVolume ?? 0.3
+        options.backgroundAudioVolume ?? 0.3,
+        options.embedSubtitles ?? true,
+        options.targetLanguage
       );
     },
     [setError, startPolling]

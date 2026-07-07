@@ -111,33 +111,6 @@ export function SettingsPage({
             </div>
           </div>
         </div>
-
-        <div className="settings-row">
-          <div className="settings-row-text">
-            <span className="settings-row-title">Default source language</span>
-            <span className="settings-row-help">
-              Use Auto-detect unless you know the source ahead of time.
-            </span>
-          </div>
-          <div className="settings-row-control">
-            <div className="select-wrap">
-              <select
-                className="select"
-                value={settings.defaultSourceLanguage}
-                onChange={(e) =>
-                  onChange({ defaultSourceLanguage: e.currentTarget.value })
-                }
-                aria-label="Default source language"
-              >
-                {SOURCE_LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section className="settings-section" aria-label="Background audio">
@@ -218,6 +191,30 @@ export function SettingsPage({
               aria-label="Background audio volume"
             />
             <span className="slider-value">{volumePercent}%</span>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <span className="settings-row-title">Embed Subtitles</span>
+            <span className="settings-row-help">
+              Embed subtitles as a selectable subtitle track inside the final exported MP4.
+            </span>
+          </div>
+          <div className="settings-row-control">
+            <button
+              type="button"
+              className="switch"
+              role="switch"
+              aria-checked={settings.embedSubtitles}
+              onClick={() =>
+                onChange({
+                  embedSubtitles: !settings.embedSubtitles,
+                })
+              }
+            >
+              <span className="switch-thumb" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </section>

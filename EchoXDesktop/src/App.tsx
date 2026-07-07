@@ -52,6 +52,7 @@ export default function App() {
     sourceLanguage: settings.defaultSourceLanguage,
     preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
     backgroundAudioVolume: settings.backgroundAudioVolume,
+    embedSubtitles: settings.embedSubtitles,
   });
 
   const [page, setPage] = useState<SidebarPage>("home");
@@ -79,6 +80,7 @@ export default function App() {
       sourceLanguage: settings.defaultSourceLanguage,
       preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
       backgroundAudioVolume: settings.backgroundAudioVolume,
+      embedSubtitles: settings.embedSubtitles,
     });
   }, [
     state.phase,
@@ -157,6 +159,7 @@ export default function App() {
       ...options,
       preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
       backgroundAudioVolume: settings.backgroundAudioVolume,
+      embedSubtitles: settings.embedSubtitles,
     });
   };
 
@@ -166,6 +169,7 @@ export default function App() {
       ...options,
       preserveBackgroundMusicEffects: settings.preserveBackgroundMusicEffects,
       backgroundAudioVolume: settings.backgroundAudioVolume,
+      embedSubtitles: settings.embedSubtitles,
     });
   };
 

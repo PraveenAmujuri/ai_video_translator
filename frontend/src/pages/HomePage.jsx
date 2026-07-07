@@ -23,6 +23,7 @@ export default function HomePage() {
   const [videoUrl, setVideoUrl] = useState(() => localStorage.getItem("echox_video_url") || null);
   const [language, setLanguage] = useState(() => localStorage.getItem("echox_language") || "te");
   const [voice, setVoice] = useState(() => localStorage.getItem("echox_voice") || "te_IN-maya-medium");
+  const [embedSubtitles, setEmbedSubtitles] = useState(true);
 
   // Sync state changes with localStorage
   useEffect(() => {
@@ -108,10 +109,10 @@ export default function HomePage() {
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div>
+          <div className="relative z-20">
             <LanguageSelector language={language} setLanguage={setLanguage} />
           </div>
-          <div>
+          <div className="relative z-10">
             <VoiceSelector
               voice={voice}
               setVoice={setVoice}
@@ -119,6 +120,27 @@ export default function HomePage() {
             />
           </div>
         </motion.section>
+
+        <motion.div
+          className="mt-6 flex items-center justify-center gap-3 relative z-10"
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+        >
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={embedSubtitles}
+              onChange={(e) => setEmbedSubtitles(e.target.checked)}
+              className="w-5 h-5 rounded border-black/10 dark:border-white/10 accent-orange-500 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-black/70 dark:text-white/70">
+              Embed subtitles in exported video
+            </span>
+          </label>
+        </motion.div>
+
 
         <motion.section
           className="mt-10 relative z-20"
@@ -146,6 +168,7 @@ export default function HomePage() {
             language={language}
             voice={voice}
             status={status}
+            embedSubtitles={embedSubtitles}
           />
         </motion.section>
 

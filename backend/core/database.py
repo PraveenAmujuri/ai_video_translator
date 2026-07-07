@@ -56,6 +56,7 @@ class Job(Base):
     tts_volume = Column(String, default="+0%")
     preserve_background_audio = Column(Boolean, default=False)
     background_audio_volume = Column(Float, default=0.3)
+    embed_subtitles = Column(Boolean, default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -120,7 +120,8 @@ async def translate_binary_stream(
     tts_pitch: str = Form("+0Hz"),
     tts_volume: str = Form("+0%"),
     preserve_background_audio: str = Form("false"),
-    background_audio_volume: str = Form("0.3")
+    background_audio_volume: str = Form("0.3"),
+    embed_subtitles: str = Form("true")
 ):
     # Validate MIME type and file extension first
     detected_type = validate_media_file(file.filename, file.content_type)
@@ -170,6 +171,7 @@ async def translate_binary_stream(
             "tts_volume": tts_volume,
             "preserve_background_audio": preserve_background_audio,
             "background_audio_volume": background_audio_volume,
+            "embed_subtitles": embed_subtitles,
         }
         
         try:
@@ -194,6 +196,7 @@ async def translate_binary_stream(
                 tts_volume=validated_data.tts_volume,
                 preserve_background_audio=validated_data.preserve_background_audio,
                 background_audio_volume=validated_data.background_audio_volume,
+                embed_subtitles=validated_data.embed_subtitles,
             )
 
         # 5. Hand the file path straight down your existing tasks pipeline framework loop
@@ -250,6 +253,7 @@ async def translate(payload: JobCreate):
             tts_volume=payload.tts_volume,
             preserve_background_audio=payload.preserve_background_audio,
             background_audio_volume=payload.background_audio_volume,
+            embed_subtitles=payload.embed_subtitles,
         )
 
     start_job(job_id)

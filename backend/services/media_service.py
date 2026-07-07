@@ -284,6 +284,8 @@ async def merge_video_audio(
     output_path: Path,
     preserve_background: bool,
     background_volume: float,
+    subtitle_path: Optional[Path] = None,
+    language: str = "eng"
 ) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     has_audio = await has_audio_stream(video_path)
@@ -294,27 +296,69 @@ async def merge_video_audio(
             "-y",
             "-i", str(video_path),
             "-i", str(audio_path),
+        ]
+        if subtitle_path:
+            cmd.extend(["-i", str(subtitle_path)])
+        
+        cmd.extend([
             "-filter_complex", f"[0:a]volume={background_volume}[bg];[bg][1:a]amix=inputs=2:duration=longest[a]",
             "-map", "0:v:0",
             "-map", "[a]",
-            "-c:v", "copy",
-            "-c:a", "aac",
+        ])
+        
+        if subtitle_path:
+            cmd.extend([
+                "-map", "2:s:0",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-c:s", "mov_text",
+                "-metadata:s:s:0", f"language={language}",
+                "-metadata:s:s:0", f"title={language.upper()} Subtitles",
+            ])
+        else:
+            cmd.extend([
+                "-c:v", "copy",
+                "-c:a", "aac",
+            ])
+            
+        cmd.extend([
             "-shortest",
             str(output_path)
-        ]
+        ])
     else:
         cmd = [
             "ffmpeg",
             "-y",
             "-i", str(video_path),
             "-i", str(audio_path),
+        ]
+        if subtitle_path:
+            cmd.extend(["-i", str(subtitle_path)])
+            
+        cmd.extend([
             "-map", "0:v:0",
             "-map", "1:a:0",
-            "-c:v", "copy",
-            "-c:a", "aac",
+        ])
+        
+        if subtitle_path:
+            cmd.extend([
+                "-map", "2:s:0",
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-c:s", "mov_text",
+                "-metadata:s:s:0", f"language={language}",
+                "-metadata:s:s:0", f"title={language.upper()} Subtitles",
+            ])
+        else:
+            cmd.extend([
+                "-c:v", "copy",
+                "-c:a", "aac",
+            ])
+            
+        cmd.extend([
             "-shortest",
             str(output_path)
-        ]
+        ])
 
     logger.info(f"Merging video and audio with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)
@@ -326,29 +370,73 @@ async def merge_video_audio(
                 "-y",
                 "-i", str(video_path),
                 "-i", str(audio_path),
+            ]
+            if subtitle_path:
+                cmd.extend(["-i", str(subtitle_path)])
+                
+            cmd.extend([
                 "-filter_complex", f"[0:a]volume={background_volume}[bg];[bg][1:a]amix=inputs=2:duration=longest[a]",
                 "-map", "0:v:0",
                 "-map", "[a]",
-                "-c:v", "libx264",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac",
+            ])
+            
+            if subtitle_path:
+                cmd.extend([
+                    "-map", "2:s:0",
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac",
+                    "-c:s", "mov_text",
+                    "-metadata:s:s:0", f"language={language}",
+                    "-metadata:s:s:0", f"title={language.upper()} Subtitles",
+                ])
+            else:
+                cmd.extend([
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac",
+                ])
+                
+            cmd.extend([
                 "-shortest",
                 str(output_path)
-            ]
+            ])
         else:
             cmd = [
                 "ffmpeg",
                 "-y",
                 "-i", str(video_path),
                 "-i", str(audio_path),
+            ]
+            if subtitle_path:
+                cmd.extend(["-i", str(subtitle_path)])
+                
+            cmd.extend([
                 "-map", "0:v:0",
                 "-map", "1:a:0",
-                "-c:v", "libx264",
-                "-pix_fmt", "yuv420p",
-                "-c:a", "aac",
+            ])
+            
+            if subtitle_path:
+                cmd.extend([
+                    "-map", "2:s:0",
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac",
+                    "-c:s", "mov_text",
+                    "-metadata:s:s:0", f"language={language}",
+                    "-metadata:s:s:0", f"title={language.upper()} Subtitles",
+                ])
+            else:
+                cmd.extend([
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac",
+                ])
+                
+            cmd.extend([
                 "-shortest",
                 str(output_path)
-            ]
+            ])
         returncode, stdout, stderr = await run_subprocess(cmd)
         if returncode != 0:
             raise RuntimeError(f"Merging video and audio failed: {stderr}")
@@ -363,27 +451,10 @@ async def generate_audio_output(
     preserve_background: bool,
     background_volume: float,
 ) -> Path:
-    """
-    Mixes original background audio with dubbed TTS audio,
-    and encodes the output to the target file format (MP3, WAV, M4A, etc.).
-    """
     output_audio_path.parent.mkdir(parents=True, exist_ok=True)
-    ext = output_audio_path.suffix.lower()
-    
-    # Choose codec based on extension
-    codec_map = {
-        ".mp3": ["-c:a", "libmp3lame", "-b:a", "192k"],
-        ".wav": ["-c:a", "pcm_s16le"],
-        ".m4a": ["-c:a", "aac", "-b:a", "192k"],
-        ".aac": ["-c:a", "aac", "-b:a", "192k"],
-        ".flac": ["-c:a", "flac"],
-        ".ogg": ["-c:a", "libvorbis", "-b:a", "192k"],
-        ".opus": ["-c:a", "libopus", "-b:a", "192k"],
-    }
-    
-    encoding_args = codec_map.get(ext, ["-c:a", "libmp3lame", "-b:a", "192k"])
-    
-    if preserve_background:
+    has_audio = await has_audio_stream(original_audio_path)
+
+    if preserve_background and has_audio:
         cmd = [
             "ffmpeg",
             "-y",
@@ -391,45 +462,74 @@ async def generate_audio_output(
             "-i", str(dubbed_audio_path),
             "-filter_complex", f"[0:a]volume={background_volume}[bg];[bg][1:a]amix=inputs=2:duration=longest[a]",
             "-map", "[a]",
-        ] + encoding_args + [str(output_audio_path)]
+            "-c:a", "aac",
+            str(output_audio_path)
+        ]
     else:
         cmd = [
             "ffmpeg",
             "-y",
             "-i", str(dubbed_audio_path),
-        ] + encoding_args + [str(output_audio_path)]
-        
-    logger.info(f"Generating output audio with cmd: {' '.join(cmd)}")
+            "-c:a", "aac",
+            str(output_audio_path)
+        ]
+
+    logger.info(f"Generating audio output with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)
     if returncode != 0:
-        raise RuntimeError(f"Failed to generate output audio: {stderr}")
-        
+        raise RuntimeError(f"Generating audio output failed: {stderr}")
+
     return output_audio_path
 
 
 async def create_static_video(
     audio_path: Path,
     output_video_path: Path,
+    subtitle_path: Optional[Path] = None,
+    language: str = "eng"
 ) -> Path:
     """
     Creates an MP4 video with a black frame (static cover) and the translated audio track.
     """
     output_video_path.parent.mkdir(parents=True, exist_ok=True)
     
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-f", "lavfi",
-        "-i", "color=c=black:s=1280x720:r=1",
-        "-i", str(audio_path),
-        "-c:v", "libx264",
-        "-tune", "stillimage",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-shortest",
-        str(output_video_path),
-    ]
+    if subtitle_path:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f", "lavfi",
+            "-i", "color=c=black:s=1280x720:r=1",
+            "-i", str(audio_path),
+            "-i", str(subtitle_path),
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-map", "2:s:0",
+            "-c:v", "libx264",
+            "-tune", "stillimage",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-c:s", "mov_text",
+            "-metadata:s:s:0", f"language={language}",
+            "-metadata:s:s:0", f"title={language.upper()} Subtitles",
+            "-shortest",
+            str(output_video_path),
+        ]
+    else:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f", "lavfi",
+            "-i", "color=c=black:s=1280x720:r=1",
+            "-i", str(audio_path),
+            "-c:v", "libx264",
+            "-tune", "stillimage",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            str(output_video_path),
+        ]
     
     logger.info(f"Creating static video with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)

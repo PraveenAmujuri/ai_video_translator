@@ -11,7 +11,7 @@ use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 
 mod separation;
-use separation::{check_and_install_demucs_engine, run_local_audio_separation, run_local_audio_mixing, download_dubbed_voice, cleanup_local_job_files};
+use separation::{check_and_install_demucs_engine, run_local_audio_separation, run_local_audio_mixing, download_dubbed_voice, download_job_subtitles, cleanup_local_job_files};
 
 const BACKEND_URL: &str = "https://api.praveenai.tech";
 const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
@@ -656,6 +656,7 @@ pub fn run() {
             run_local_audio_separation,
             run_local_audio_mixing,
             download_dubbed_voice,
+            download_job_subtitles,
             cleanup_local_job_files,
         ])
         .run(tauri::generate_context!())

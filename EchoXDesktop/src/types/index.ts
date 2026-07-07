@@ -25,6 +25,7 @@ export interface TranslationOptions {
   sourceLanguage: string;
   preserveBackgroundMusicEffects?: boolean;
   backgroundAudioVolume?: number;
+  embedSubtitles?: boolean;
 }
 
 export interface TranslationParams {
