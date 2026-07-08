@@ -26,7 +26,7 @@ const COLS = [
   {
     heading: "Company",
     links: [
-      { label: "About", to: "/", external: false },
+      { label: "About", to: "/about", external: false },
       { label: "Request Feature", to: "/request-feature", external: false },
       { label: "Report Issue", to: "/report-issue", external: false },
     ],

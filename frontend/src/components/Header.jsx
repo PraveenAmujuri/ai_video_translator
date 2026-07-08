@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { label: "Home", to: "/", external: false },
   { label: "Features", to: "/features", external: false },
   { label: "Docs", to: "/docs", external: false },
+  { label: "About", to: "/about", external: false },
   { label: "Github", to: GITHUB_URL, external: true },
 ];
 
