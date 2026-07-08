@@ -31,21 +31,18 @@ jobs:
               git pull origin main
             fi
 
-            # Create .env
-            echo "DEBUG=${{ secrets.DEBUG }}" > .env
-            echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
-            echo "GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-            echo "WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}" >> .env
-            echo "WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}" >> .env
-            echo "WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}" >> .env
-            echo "RAPIDAPI_HOST=${{ secrets.RAPIDAPI_HOST }}" >> .env
-            echo "RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}" >> .env
+            # Create .env using single quotes to prevent shell expansion issues when secrets contain special characters (like $)
+            echo 'DEBUG=${{ secrets.DEBUG }}' > .env
+            echo 'OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}' >> .env
+            echo 'GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}' >> .env
+            echo 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}' >> .env
+            echo 'WHISPER_MODEL=${{ secrets.WHISPER_MODEL }}' >> .env
+            echo 'WHISPER_DEVICE=${{ secrets.WHISPER_DEVICE }}' >> .env
+            echo 'WHISPER_COMPUTE_TYPE=${{ secrets.WHISPER_COMPUTE_TYPE }}' >> .env
+            echo 'RAPIDAPI_HOST=${{ secrets.RAPIDAPI_HOST }}' >> .env
+            echo 'RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}' >> .env
 
-            # Stop existing containers if any
-            sudo docker-compose down || true
-
-            # Rebuild and start
+            # Rebuild and start. This builds the new image in the background while the old container continues serving traffic, minimizing service downtime.
             sudo docker-compose up -d --build
 
             # Remove dangling images only

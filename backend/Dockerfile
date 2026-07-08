@@ -18,7 +18,16 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy models first to leverage Docker layer caching (since models change rarely)
+COPY models/ ./models/
+
+# Copy application source directories and files explicitly (avoids copying models/ twice and preserves caching)
+COPY api/ ./api/
+COPY core/ ./core/
+COPY services/ ./services/
+COPY workers/ ./workers/
+COPY scripts/ ./scripts/
+COPY main.py .
 
 # Ensure storage directories exist with proper access gates
 RUN mkdir -p uploads outputs hls && chmod -R 777 uploads outputs hls

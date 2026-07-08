@@ -1,0 +1,31 @@
+# Exclude python virtual environments
+venv/
+.venv/
+
+# Exclude generated media outputs and uploads
+uploads/
+outputs/
+hls/
+static/
+
+# Exclude SQLite databases
+*.db
+*.sqlite3
+
+# Exclude python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude local environment files
+.env
+.env.local
+
+# Exclude IDE settings and temporary files
+.vscode/
+.idea/
+.git/
+.github/
+tmp/
+temp/
