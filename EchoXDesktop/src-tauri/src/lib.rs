@@ -11,7 +11,7 @@ use tokio::io::AsyncWriteExt;
 use tokio_util::codec::{BytesCodec, FramedRead};
 
 mod separation;
-use separation::{check_and_install_demucs_engine, run_local_audio_separation, run_local_audio_mixing, download_dubbed_voice, download_job_subtitles, cleanup_local_job_files};
+use separation::{check_and_install_demucs_engine, run_local_audio_separation, run_local_audio_mixing, download_dubbed_voice, download_job_subtitles, get_job_vtt_data, cleanup_local_job_files};
 
 const BACKEND_URL: &str = "https://api.praveenai.tech";
 const MAX_FILE_BYTES: u64 = 200 * 1024 * 1024;
@@ -640,6 +640,61 @@ async fn save_translated_video(
     Ok(saved_path)
 }
 
+#[tauri::command]
+async fn download_output_video(
+    _app: tauri::AppHandle,
+    job_id: String,
+) -> Result<String, String> {
+    let temp_dir = std::env::temp_dir()
+        .join("EchoX")
+        .join("jobs")
+        .join(&job_id);
+
+    fs::create_dir_all(&temp_dir)
+        .await
+        .map_err(|e| format!("Failed to create job directory: {}", e))?;
+
+    let local_output_path = temp_dir.join("local_output.mp4");
+
+    if local_output_path.exists() {
+        return Ok(local_output_path.to_str().unwrap().to_string());
+    }
+
+    let download_url = format!("{}/outputs/{}/output.mp4", BACKEND_URL, job_id);
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&download_url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to connect to backend: {}", e))?;
+
+    if !response.status().is_success() {
+        let status = response.status().as_u16();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!("Backend error {}: {}", status, body));
+    }
+
+    let mut file = fs::File::create(&local_output_path)
+        .await
+        .map_err(|e| format!("Failed to create local temp file: {}", e))?;
+
+    let mut stream = response.bytes_stream();
+
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| format!("Stream read error: {}", e))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("Failed to write chunk: {}", e))?;
+    }
+
+    file.flush()
+        .await
+        .map_err(|e| format!("Failed to flush temp file: {}", e))?;
+
+    Ok(local_output_path.to_str().unwrap().to_string())
+}
+
 // ── Tauri entry point ─────────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -651,12 +706,14 @@ pub fn run() {
             download_video,
             process_translation_pipeline,
             save_translated_video,
+            download_output_video,
             update_extractor_engine,
             check_and_install_demucs_engine,
             run_local_audio_separation,
             run_local_audio_mixing,
             download_dubbed_voice,
             download_job_subtitles,
+            get_job_vtt_data,
             cleanup_local_job_files,
         ])
         .run(tauri::generate_context!())

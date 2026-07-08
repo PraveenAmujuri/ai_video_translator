@@ -68,8 +68,8 @@ const DOC_SECTIONS = [
           text: "Paste a YouTube URL directly into EchoX. The application downloads the video, processes the audio track, and returns a fully translated version — all within the same interface.",
         },
         {
-          title: "Subtitle localization",
-          text: "Translated subtitles are context-aware — idioms, cultural references, and tone are preserved. Source and translated tracks are available for side-by-side comparison during playback.",
+          title: "Selectable subtitle tracks",
+          text: "Rather than permanently burning subtitles into the video pixels (which ruins video quality and requires re-encoding), EchoX embeds selectable soft subtitle tracks (mov_text) directly into the MP4 container. Subtitles can be toggled on/off natively in VLC, QuickTime, or web video players.",
         },
         {
           title: "Translation history",
@@ -254,7 +254,7 @@ const DOC_SECTIONS = [
         },
         {
           q: "What file formats are supported?",
-          a: "EchoX supports MP4, MOV, AVI, MKV for video input. Output is delivered as MP4 with the dubbed audio track and embedded subtitles.",
+          a: "EchoX supports MP4, MOV, AVI, MKV for video input. Output is delivered as a high-quality MP4 containing the dubbed voice track and selectable (soft) subtitles that can be toggled on or off.",
         },
         {
           q: "How long does translation take?",

@@ -1,7 +1,6 @@
 import { LanguageSelect } from "./LanguageSelect";
 import { VoiceSelect } from "./VoiceSelect";
 import {
-  SOURCE_LANGUAGES,
   TARGET_LANGUAGES,
   getVoicesForLanguage,
   getDefaultVoice,

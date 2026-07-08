@@ -1,6 +1,5 @@
 import type { AppSettings } from "../hooks/useSettings";
 import {
-  SOURCE_LANGUAGES,
   TARGET_LANGUAGES,
   getVoicesForLanguage,
   getDefaultVoice,

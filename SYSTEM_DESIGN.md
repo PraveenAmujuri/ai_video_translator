@@ -10,8 +10,8 @@ EchoX is a client-server media dubbing system that automates the translation of 
 
 ### Functional Core
 1. **Source Ingestion**: Accepts local video/audio uploads (up to 200MB) or downloads streams from video sharing platforms via `yt-dlp`.
-2. **Dialogue Separation**: Isolates original vocal tracks from background audio. On desktop, this runs locally using Demucs-based ONNX models.
-3. **Timed Translation**: Transcribes and translates the extracted vocals in a single API pass via `gemini-1.5-flash`, returning millisecond-accurate time boundaries.
+2. **Dialogue Separation**: Isolates original vocal tracks from background audio. On desktop, this runs locally using `htdemucs fp16 weights.onnx` models.
+3. **Timed Translation**: Transcribes and translates the extracted vocals in a single API pass via `gemini-3.1-flash-lite`, returning millisecond-accurate time boundaries.
 4. **Speech Generation (Offline TTS)**: Synthesizes translated vocal segments using Piper TTS running local ONNX models.
 5. **Timeline Pacing Alignment**: Dynamically stretches or compresses synthesized TTS clips using FFmpeg's `atempo` filter to align them with the original video's timeline.
 6. **Composite Mastering**: Mixes the new speech with the separated background track and outputs an MP4 file or an HLS playlist.
@@ -52,7 +52,7 @@ graph TB
   end
 
   subgraph External AI Services
-    Gemini[Gemini 1.5 Flash API]
+    Gemini[Gemini 3.1 Flash Lite API]
   end
 
   WebClient --> |HTTP API Requests| Router
@@ -162,7 +162,7 @@ stateDiagram-v2
 ### Step-by-Step Pipeline Mechanics
 1. **Extraction**: Extract audio from source video to high-fidelity WAV (`pcm_s16le`, `16kHz`, mono).
 2. **Background Separation**: In desktop modes, run local Demucs separation via ONNX Runtime to isolate background tracks.
-3. **Gemini Ingestion**: Upload mono vocals to `gemini-1.5-flash`. The prompt instructs the model to act as a transcription and translation engine, outputting a timed subtitle schema in a single pass.
+3. **Gemini Ingestion**: Upload mono vocals to `gemini-3.1-flash-lite`. The prompt instructs the model to act as a transcription and translation engine, outputting a timed subtitle schema in a single pass.
 4. **Subtitles Creation**: Save time-stamped JSON data directly to WebVTT and SRT formats.
 5. **Speech Generation**: Feed translated segments to local Piper TTS ONNX models to produce separate audio files.
 6. **Speed Matching**: Stretch the duration of generated audio files using FFmpeg's `atempo` filter to align them with original timing boundaries.
@@ -205,7 +205,7 @@ stateDiagram-v2
 * **Rejected Alternatives**: 
   * *ElevenLabs / Google Cloud TTS*: High operating costs and requires an active internet connection.
 
-### Audio Translation Model (Gemini 1.5 Flash instead of Whispering + GPT-4)
+### Audio Translation Model (Gemini 3.1 Flash Lite instead of Whispering + GPT-4)
 * **Advantages**: Native audio processing reduces transcription errors, and its large context window allows transcribing, translating, and segmenting audio in a single query.
 * **Tradeoffs**: Requires internet connectivity for API calls.
 * **Rejected Alternatives**: 

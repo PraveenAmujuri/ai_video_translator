@@ -90,3 +90,8 @@ html.dark body {
     background-size: 40px 40px;
   }
 }
+
+/* Force HTML5 Captions (CC) toggle button to show directly in control bar next to volume/fullscreen */
+video::-webkit-media-controls-toggle-closed-captions-button {
+  display: inline-flex !important;
+}

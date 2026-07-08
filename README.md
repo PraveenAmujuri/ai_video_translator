@@ -67,7 +67,7 @@ graph TD
   end
 
   subgraph External [External APIs]
-    Gemini[Google GenAI API <br> gemini-1.5-flash]
+    Gemini[Google GenAI API <br> gemini-3.1-flash-lite]
   end
 
   subgraph Engine [Local Core Processing Engines]
@@ -120,7 +120,7 @@ graph TD
 | :--- | :--- | :--- |
 | **Google GenAI SDK**| `^0.1.0` | Python client library for Gemini |
 | **Piper TTS** | `^1.2.0` | Local speech generator (ONNX) |
-| **Gemini 1.5 Flash** | `1.5` | Audio transcription and translation model |
+| **Gemini 3.1 Flash Lite** | `3.1` | Audio transcription and translation model |
 | **ONNX Runtime** | `^1.16.0` | Local audio source separation (vocal split) |
 
 ### Other Tools
@@ -176,7 +176,7 @@ The translation and dubbing process runs in the background on the server:
 
 ### 3. Speech Transcription & Translation
 * The vocal audio track is sent to the Gemini API.
-* In a single query, `gemini-1.5-flash` transcribes the audio, translates it, and splits it into timed segments.
+* In a single query, `gemini-3.1-flash-lite` transcribes the audio, translates it, and splits it into timed segments.
 * The API returns clean JSON data containing start/end times and the translated text.
 
 ### 4. Subtitles & Selectable Subtitle Embedding

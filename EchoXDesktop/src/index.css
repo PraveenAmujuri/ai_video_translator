@@ -1469,25 +1469,25 @@ a { color: var(--text-primary); text-decoration: none; }
   letter-spacing: var(--track-mono);
 }
 
-/* Switch */
 .switch {
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 38px;
-  height: 22px;
+  flex-shrink: 0;
+  width: 46px;
+  height: 24px;
   border-radius: var(--r-full);
   background: var(--bg-canvas);
   border: 1px solid var(--line);
-  padding: 2px;
+  padding: 3px;
   transition:
     background-color var(--dur-fast) var(--ease-out),
     border-color var(--dur-fast) var(--ease-out);
 }
 
 .switch-thumb {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: var(--r-full);
   background: var(--text-tertiary);
   transform: translate3d(0, 0, 0);
@@ -1503,8 +1503,13 @@ a { color: var(--text-primary); text-decoration: none; }
 }
 
 .switch[aria-checked="true"] .switch-thumb {
-  transform: translate3d(16px, 0, 0);
+  transform: translate3d(20px, 0, 0);
   background: var(--tile-ink);
+}
+
+/* Force HTML5 Captions (CC) toggle button to show directly in control bar next to volume/fullscreen */
+video::-webkit-media-controls-toggle-closed-captions-button {
+  display: inline-flex !important;
 }
 
 /* Slider */

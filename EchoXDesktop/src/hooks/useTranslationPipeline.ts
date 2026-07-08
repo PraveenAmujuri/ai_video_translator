@@ -12,6 +12,8 @@ import {
   tauriDownloadDubbedVoice,
   tauriDownloadJobSubtitles,
   tauriCleanupLocalJobFiles,
+  tauriDownloadOutputVideo,
+  tauriGetJobVttData,
 } from "../lib/tauri-commands";
 import type {
   PipelineState,
@@ -161,6 +163,38 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
               }
             }
 
+            if (!localVideoUrl) {
+              setState((prev) => ({
+                ...prev,
+                logs: [...prev.logs, makeLog("Downloading translated video for preview...")],
+              }));
+              try {
+                const localOutputPath = await tauriDownloadOutputVideo(jobId);
+                localVideoUrl = convertFileSrc(localOutputPath);
+              } catch (dlErr) {
+                const dlErrMsg = dlErr instanceof Error ? dlErr.message : String(dlErr);
+                console.error("Failed to download output video for local preview:", dlErr);
+                setState((prev) => ({
+                  ...prev,
+                  logs: [...prev.logs, makeLog(`Video download failed: ${dlErrMsg}. Reverting to remote stream.`, "warn")],
+                }));
+              }
+            }
+
+            let localVttUrl: string | null = null;
+            if (embedSubtitles) {
+              setState((prev) => ({
+                ...prev,
+                logs: [...prev.logs, makeLog("Downloading translated captions track...")],
+              }));
+              try {
+                const vttText = await tauriGetJobVttData(jobId);
+                localVttUrl = "data:text/vtt;charset=utf-8," + encodeURIComponent(vttText);
+              } catch (vttErr) {
+                console.error("Failed to load VTT captions track:", vttErr);
+              }
+            }
+
             let resolved = resolveStreamEndpoints(jobId);
             if (localVideoUrl) {
               resolved = {
@@ -168,6 +202,10 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                 videoUrl: localVideoUrl,
               };
             }
+            resolved = {
+              ...resolved,
+              subtitleUrl: localVttUrl,
+            };
             setEndpoints(resolved);
             setState((prev) => ({
               ...prev,

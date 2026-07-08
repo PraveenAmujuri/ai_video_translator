@@ -66,3 +66,11 @@ export async function tauriDownloadJobSubtitles(jobId: string): Promise<string> 
 export async function tauriCleanupLocalJobFiles(jobId: string): Promise<void> {
   return invoke<void>("cleanup_local_job_files", { jobId });
 }
+
+export async function tauriDownloadOutputVideo(jobId: string): Promise<string> {
+  return invoke<string>("download_output_video", { jobId });
+}
+
+export async function tauriGetJobVttData(jobId: string): Promise<string> {
+  return invoke<string>("get_job_vtt_data", { jobId });
+}

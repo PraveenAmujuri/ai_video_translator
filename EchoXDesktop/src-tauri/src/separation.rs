@@ -844,6 +844,27 @@ pub async fn download_job_subtitles(
 }
 
 #[tauri::command]
+pub async fn get_job_vtt_data(
+    _app: AppHandle,
+    job_id: String,
+) -> Result<String, String> {
+    let download_url = format!("https://api.praveenai.tech/outputs/{}/subtitles.vtt", job_id);
+    let client = reqwest::Client::new();
+    let response = client.get(&download_url).send().await
+        .map_err(|e| format!("Failed to connect to backend: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("Backend returned status {}", response.status()));
+    }
+
+    let text = response.text().await
+        .map_err(|e| format!("Failed to read VTT text: {}", e))?;
+
+    Ok(text)
+}
+
+
+#[tauri::command]
 pub async fn cleanup_local_job_files(job_id: String) -> Result<(), String> {
     let temp_dir = std::env::temp_dir()
         .join("EchoX")

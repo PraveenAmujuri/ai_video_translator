@@ -46,7 +46,7 @@ graph TB
   end
 
   subgraph External AI Services
-    Gemini[Gemini 1.5 Flash API]
+    Gemini[Gemini 3.1 Flash Lite API]
   end
 
   WebClient --> |HTTP / REST| Router
@@ -63,7 +63,7 @@ graph TB
 * **Desktop Frontend (React/Tauri)**: Native client container. Interacts with local OS APIs, manages IPC requests, and triggers Tauri Rust backend commands.
 * **FastAPI Backend**: Orchestrates API requests, manages active job queues, and invokes workers.
 * **SQLite (Backend & Local)**: Stores task records, processing histories, and settings.
-* **Gemini 1.5 Flash**: Orchestrates single-query audio transcription, translation, and timed segment extraction.
+* **Gemini 3.1 Flash Lite**: Orchestrates single-query audio transcription, translation, and timed segment extraction.
 * **Piper TTS**: Performs fast, offline neural speech synthesis using ONNX models.
 * **ONNX Runtime**: Executes CPU-based model inference for Demucs audio separation.
 * **FFmpeg**: Handles audio extraction, audio speed-matching, mixing, and HLS streaming segment generation.
@@ -160,7 +160,7 @@ Every backend service inside `backend/services/` operates asynchronously:
 
 ## 6. AI Models
 
-### 1. Gemini 1.5 Flash (`gemini-1.5-flash`)
+### 1. Gemini 3.1 Flash Lite (`gemini-3.1-flash-lite`)
 * **Purpose**: Performs simultaneous audio transcription, translation, and time-stamped segmentation in a single step.
 * **Input**: Single-channel 16kHz vocal WAV audio.
 * **Output**: JSON array containing structured objects:
@@ -185,6 +185,7 @@ Every backend service inside `backend/services/` operates asynchronously:
   * Telugu: `te_IN-maya-medium` (Female)
 
 ### 3. Demucs ONNX Separation Model
+* **Model Version**: `htdemucs fp16 weights.onnx` (fine-tuned Hybrid Transformer Demucs model running in FP16 precision ONNX format).
 * **Input Tensor**: `[1, 2, N]` (stereo audio samples, where N is chunk size).
 * **Output Tensors**: Vocals `[1, 2, N]`, Instruments `[1, 2, N]`.
 * **Sample Rate**: 44.1kHz.

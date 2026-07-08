@@ -219,7 +219,7 @@ export default function HomePage() {
               </div>
 
               <div className="relative">
-                <VideoPlayer videoUrl={videoUrl} subtitleUrl={subtitleUrl} />
+                <VideoPlayer videoUrl={videoUrl} subtitleUrl={embedSubtitles ? subtitleUrl : null} />
               </div>
             </section>
           </motion.section>

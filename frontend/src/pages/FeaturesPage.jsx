@@ -1314,7 +1314,7 @@ export default function EchoXFeaturesPage() {
                   {[
                     "Generate target speech across major international and regional languages with multiple voice options and regional variants.",
                     "Start instantly as the engine automatically detects the language in your source media.",
-                    "Export matching subtitle files that align perfectly with the new voice track.",
+                    "Embed selectable soft subtitles directly inside the exported MP4 video without quality-losing re-encoding, and download standalone SRT/WebVTT tracks.",
                     "Keep the feel of the original media by preserving background music via on-device ONNX source separation.",
                   ].map((t, i) => (
                     <div className="feat-detail" key={i}>
