@@ -21,6 +21,7 @@ export default function HomePage() {
   });
   const [status, setStatus] = useState(() => localStorage.getItem("echox_status") || "idle");
   const [videoUrl, setVideoUrl] = useState(() => localStorage.getItem("echox_video_url") || null);
+  const [subtitleUrl, setSubtitleUrl] = useState(() => localStorage.getItem("echox_subtitle_url") || null);
   const [language, setLanguage] = useState(() => localStorage.getItem("echox_language") || "te");
   const [voice, setVoice] = useState(() => localStorage.getItem("echox_voice") || "te_IN-maya-medium");
   const [embedSubtitles, setEmbedSubtitles] = useState(true);
@@ -31,9 +32,11 @@ export default function HomePage() {
       setJobId(null);
       setProgress(0);
       setVideoUrl(null);
+      setSubtitleUrl(null);
       localStorage.removeItem("echox_job_id");
       localStorage.removeItem("echox_progress");
       localStorage.removeItem("echox_video_url");
+      localStorage.removeItem("echox_subtitle_url");
     }
     localStorage.setItem("echox_status", status);
   }, [status]);
@@ -53,6 +56,14 @@ export default function HomePage() {
       localStorage.setItem("echox_video_url", videoUrl);
     }
   }, [videoUrl]);
+
+  useEffect(() => {
+    if (subtitleUrl) {
+      localStorage.setItem("echox_subtitle_url", subtitleUrl);
+    } else {
+      localStorage.removeItem("echox_subtitle_url");
+    }
+  }, [subtitleUrl]);
 
   useEffect(() => {
     localStorage.setItem("echox_language", language);
@@ -186,6 +197,7 @@ export default function HomePage() {
                 setProgress={setProgress}
                 setStatus={setStatus}
                 setVideoUrl={setVideoUrl}
+                setSubtitleUrl={setSubtitleUrl}
                 status={status}
               />
             </div>
@@ -207,7 +219,7 @@ export default function HomePage() {
               </div>
 
               <div className="relative">
-                <VideoPlayer videoUrl={videoUrl} />
+                <VideoPlayer videoUrl={videoUrl} subtitleUrl={subtitleUrl} />
               </div>
             </section>
           </motion.section>

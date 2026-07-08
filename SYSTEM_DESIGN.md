@@ -166,7 +166,7 @@ stateDiagram-v2
 4. **Subtitles Creation**: Save time-stamped JSON data directly to WebVTT and SRT formats.
 5. **Speech Generation**: Feed translated segments to local Piper TTS ONNX models to produce separate audio files.
 6. **Speed Matching**: Stretch the duration of generated audio files using FFmpeg's `atempo` filter to align them with original timing boundaries.
-7. **Mastering & Streaming**: Mix dubbed audio with background audio and encode the output as a web-compatible MP4 file or HLS segment playlists.
+7. **Mastering & Streaming**: Mix dubbed audio with background audio, embed the generated `.srt` subtitle file as a selectable soft subtitle track using the `mov_text` codec, and encode the output as a web-compatible MP4 file or HLS segment playlists.
 
 ---
 
@@ -210,6 +210,12 @@ stateDiagram-v2
 * **Tradeoffs**: Requires internet connectivity for API calls.
 * **Rejected Alternatives**: 
   * *Whisper Local + GPT-4*: Slower execution speed and higher resource requirements when run locally.
+
+### Selectable Subtitle Embedding (mov_text instead of burned-in subtitles)
+* **Advantages**: Allows the user to toggle subtitles on/off inside player interfaces, preserves original source video resolution and quality without re-compression degradation, maps metadata language codes, and allows YouTube to automatically extract closed captions upon upload.
+* **Tradeoffs**: Limited formatting customization compared to burned-in text.
+* **Rejected Alternatives**:
+  * *Burned-in Subtitles*: Force CPU/GPU intensive video frame rendering (re-encoding), which increases mixing time from seconds to minutes, degrades output visual quality, and permanently burns text onto the screen.
 
 ---
 

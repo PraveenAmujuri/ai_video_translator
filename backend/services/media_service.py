@@ -278,6 +278,35 @@ async def has_audio_stream(file_path: Path) -> bool:
     return False
 
 
+async def log_media_info(file_path: Path, label: str):
+    """
+    Logs media info, size, existence, and codec details using ffprobe.
+    """
+    if not file_path:
+        logger.warning(f"[DEBUG LOG] {label} path is None")
+        return
+    if not file_path.exists():
+        logger.error(f"[DEBUG LOG] {label} FILE DOES NOT EXIST: {file_path.absolute()}")
+        return
+    
+    file_size = file_path.stat().st_size
+    logger.info(f"[DEBUG LOG] {label} exists at {file_path.absolute()} (Size: {file_size} bytes)")
+    
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-show_format",
+        "-show_streams",
+        "-of", "json",
+        str(file_path)
+    ]
+    returncode, stdout, stderr = await run_subprocess(cmd)
+    if returncode == 0:
+        logger.info(f"[DEBUG LOG] ffprobe output for {label}:\n{stdout.strip()}")
+    else:
+        logger.warning(f"[DEBUG LOG] ffprobe failed for {label}: {stderr}")
+
+
 async def merge_video_audio(
     video_path: Path,
     audio_path: Path,
@@ -287,6 +316,16 @@ async def merge_video_audio(
     subtitle_path: Optional[Path] = None,
     language: str = "eng"
 ) -> Path:
+    import time
+    start_time = time.time()
+    logger.info(f"[DEBUG LOG] Starting merge_video_audio...")
+    
+    # Verify inputs
+    await log_media_info(video_path, "Input Video")
+    await log_media_info(audio_path, "Dubbed Audio")
+    if subtitle_path:
+        await log_media_info(subtitle_path, "Subtitle File")
+        
     output_path.parent.mkdir(parents=True, exist_ok=True)
     has_audio = await has_audio_stream(video_path)
 
@@ -362,6 +401,10 @@ async def merge_video_audio(
 
     logger.info(f"Merging video and audio with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)
+    logger.info(f"[DEBUG LOG] FFmpeg merge return code: {returncode}")
+    logger.info(f"[DEBUG LOG] FFmpeg stdout:\n{stdout}")
+    logger.info(f"[DEBUG LOG] FFmpeg stderr:\n{stderr}")
+    
     if returncode != 0:
         logger.warning(f"Merging with copy codec failed: {stderr}. Retrying with video re-encoding...")
         if preserve_background and has_audio:
@@ -437,10 +480,18 @@ async def merge_video_audio(
                 "-shortest",
                 str(output_path)
             ])
+            
+        logger.info(f"Retrying merge with re-encoding cmd: {' '.join(cmd)}")
         returncode, stdout, stderr = await run_subprocess(cmd)
+        logger.info(f"[DEBUG LOG] FFmpeg retry return code: {returncode}")
+        logger.info(f"[DEBUG LOG] FFmpeg retry stdout:\n{stdout}")
+        logger.info(f"[DEBUG LOG] FFmpeg retry stderr:\n{stderr}")
+        
         if returncode != 0:
             raise RuntimeError(f"Merging video and audio failed: {stderr}")
 
+    logger.info(f"[DEBUG LOG] merge_video_audio completed in {time.time() - start_time:.2f} seconds")
+    await log_media_info(output_path, "Merged Output Video")
     return output_path
 
 
@@ -451,8 +502,29 @@ async def generate_audio_output(
     preserve_background: bool,
     background_volume: float,
 ) -> Path:
+    import time
+    start_time = time.time()
+    logger.info(f"[DEBUG LOG] Starting generate_audio_output...")
+    
+    # Verify inputs
+    await log_media_info(original_audio_path, "Original Audio")
+    await log_media_info(dubbed_audio_path, "Dubbed Audio")
+
     output_audio_path.parent.mkdir(parents=True, exist_ok=True)
     has_audio = await has_audio_stream(original_audio_path)
+    ext = output_audio_path.suffix.lower()
+
+    codec_map = {
+        ".mp3": ["-c:a", "libmp3lame", "-b:a", "192k"],
+        ".wav": ["-c:a", "pcm_s16le"],
+        ".m4a": ["-c:a", "aac", "-b:a", "192k"],
+        ".aac": ["-c:a", "aac", "-b:a", "192k"],
+        ".flac": ["-c:a", "flac"],
+        ".ogg": ["-c:a", "libvorbis", "-b:a", "192k"],
+        ".opus": ["-c:a", "libopus", "-b:a", "192k"],
+    }
+    
+    encoding_args = codec_map.get(ext, ["-c:a", "libmp3lame", "-b:a", "192k"])
 
     if preserve_background and has_audio:
         cmd = [
@@ -462,23 +534,25 @@ async def generate_audio_output(
             "-i", str(dubbed_audio_path),
             "-filter_complex", f"[0:a]volume={background_volume}[bg];[bg][1:a]amix=inputs=2:duration=longest[a]",
             "-map", "[a]",
-            "-c:a", "aac",
-            str(output_audio_path)
-        ]
+        ] + encoding_args + [str(output_audio_path)]
     else:
         cmd = [
             "ffmpeg",
             "-y",
             "-i", str(dubbed_audio_path),
-            "-c:a", "aac",
-            str(output_audio_path)
-        ]
+        ] + encoding_args + [str(output_audio_path)]
 
     logger.info(f"Generating audio output with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)
+    logger.info(f"[DEBUG LOG] FFmpeg generate_audio return code: {returncode}")
+    logger.info(f"[DEBUG LOG] FFmpeg generate_audio stdout:\n{stdout}")
+    logger.info(f"[DEBUG LOG] FFmpeg generate_audio stderr:\n{stderr}")
+    
     if returncode != 0:
         raise RuntimeError(f"Generating audio output failed: {stderr}")
 
+    logger.info(f"[DEBUG LOG] generate_audio_output completed in {time.time() - start_time:.2f} seconds")
+    await log_media_info(output_audio_path, "Generated Audio Output")
     return output_audio_path
 
 
@@ -491,6 +565,15 @@ async def create_static_video(
     """
     Creates an MP4 video with a black frame (static cover) and the translated audio track.
     """
+    import time
+    start_time = time.time()
+    logger.info(f"[DEBUG LOG] Starting create_static_video...")
+    
+    # Verify inputs
+    await log_media_info(audio_path, "Static Video Input Audio")
+    if subtitle_path:
+        await log_media_info(subtitle_path, "Static Video Input Subtitle")
+        
     output_video_path.parent.mkdir(parents=True, exist_ok=True)
     
     if subtitle_path:
@@ -533,7 +616,13 @@ async def create_static_video(
     
     logger.info(f"Creating static video with cmd: {' '.join(cmd)}")
     returncode, stdout, stderr = await run_subprocess(cmd)
+    logger.info(f"[DEBUG LOG] FFmpeg static video return code: {returncode}")
+    logger.info(f"[DEBUG LOG] FFmpeg static video stdout:\n{stdout}")
+    logger.info(f"[DEBUG LOG] FFmpeg static video stderr:\n{stderr}")
+    
     if returncode != 0:
         raise RuntimeError(f"Failed to create static video: {stderr}")
         
+    logger.info(f"[DEBUG LOG] create_static_video completed in {time.time() - start_time:.2f} seconds")
+    await log_media_info(output_video_path, "Static Video Output")
     return output_video_path

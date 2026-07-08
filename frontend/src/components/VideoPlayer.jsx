@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import ShineBorder from "./ui/ShineBorder";
 import { Backlight } from "./ui/Backlight";
 
-export default function VideoPlayer({ videoUrl }) {
+export default function VideoPlayer({ videoUrl, subtitleUrl }) {
   const videoRef = useRef(null);
   const [isPortrait, setIsPortrait] = useState(false);
 
@@ -43,6 +43,7 @@ export default function VideoPlayer({ videoUrl }) {
             <video
               ref={videoRef}
               src={finalMergedStreamTarget}
+              crossOrigin="anonymous"
               controls
               preload="metadata"
               onLoadedMetadata={handleMetadata}
@@ -68,7 +69,24 @@ export default function VideoPlayer({ videoUrl }) {
                     `
                 }
               `}
-            />
+            >
+              {subtitleUrl && (
+                <track
+                  label="Translated Subtitles"
+                  kind="subtitles"
+                  srcLang="auto"
+                  src={
+                    subtitleUrl.startsWith("http")
+                      ? subtitleUrl
+                      : `${
+                          import.meta.env.VITE_API_BASE_URL ||
+                          "https://api.praveenai.tech"
+                        }${subtitleUrl}`
+                  }
+                  default
+                />
+              )}
+            </video>
           </Backlight>
         </ShineBorder>
       </div>

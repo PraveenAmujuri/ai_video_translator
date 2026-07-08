@@ -179,8 +179,9 @@ The translation and dubbing process runs in the background on the server:
 * In a single query, `gemini-1.5-flash` transcribes the audio, translates it, and splits it into timed segments.
 * The API returns clean JSON data containing start/end times and the translated text.
 
-### 4. Subtitles
-* The backend saves the timed segments into **SRT** and **WebVTT** subtitle files.
+### 4. Subtitles & Selectable Subtitle Embedding
+* The backend saves the timed segments into standalone **SRT** and **WebVTT** files.
+* In addition, EchoX embeds the subtitles as a selectable/soft subtitle track directly inside the exported MP4 video. This is done using the standardized `mov_text` subtitle codec with correct language metadata, allowing users to toggle captions on or off inside standard media players like VLC, MPV, or QuickTime without burnt-in text or re-encoding delays.
 
 ### 5. Generate Voice (Offline TTS)
 * **Piper** reads each translated text segment aloud using local voice models. Supported languages include:

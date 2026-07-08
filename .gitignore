@@ -84,6 +84,10 @@ node_modules/
 *.mkv
 *.webm
 
+# Keep voice preview assets
+!frontend/public/voice-previews/
+!frontend/public/voice-previews/**
+
 # Secrets
 secrets.json
 credentials.json

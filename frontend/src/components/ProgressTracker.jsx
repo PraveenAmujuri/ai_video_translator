@@ -87,6 +87,7 @@ export default function ProgressTracker({
   setProgress,
   setStatus,
   setVideoUrl,
+  setSubtitleUrl,
   status,
 }) {
   const { isDark } = useTheme();
@@ -124,6 +125,9 @@ export default function ProgressTracker({
           console.log("JOB COMPLETED");
           const streamRes = await api.get(`/job/${jobId}/streams`);
           setVideoUrl(streamRes.data.video_url);
+          if (setSubtitleUrl) {
+            setSubtitleUrl(streamRes.data.subtitle_url);
+          }
           clearInterval(interval);
         }
 

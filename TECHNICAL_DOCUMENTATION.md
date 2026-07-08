@@ -219,6 +219,16 @@ Converts the completed video into streaming HLS files:
 ffmpeg -y -i output.mp4 -profile:v baseline -level 3.0 -s 640x360 -start_number 0 -hls_time 6 -hls_list_size 0 -f hls playlist.m3u8
 ```
 
+### 5. Selectable Subtitle Embedding
+Multiplexes a subtitle file (.srt) directly into the MP4 video container as a selectable soft track (`mov_text` codec) with language tagging and title metadata:
+```bash
+ffmpeg -y -i input.mp4 -i dubbed.wav -i subtitles.srt \
+  -map 0:v:0 -map 1:a:0 -map 2:s:0 \
+  -c:v copy -c:a aac -c:s mov_text \
+  -metadata:s:s:0 language=hin -metadata:s:s:0 title="Hindi Subtitles" \
+  output.mp4
+```
+
 ---
 
 ## 8. Database Schema
