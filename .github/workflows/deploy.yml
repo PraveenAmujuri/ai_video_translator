@@ -43,7 +43,11 @@ jobs:
             echo 'RAPIDAPI_KEY=${{ secrets.RAPIDAPI_KEY }}' >> .env
 
             # Rebuild and start. This builds the new image in the background while the old container continues serving traffic, minimizing service downtime.
-            sudo docker-compose up -d --build
+            export DOCKER_BUILDKIT=1
+            
+            export COMPOSE_DOCKER_CLI_BUILD=1
+
+            sudo docker compose up -d --build
 
             # Remove dangling images only
             sudo docker image prune -f
