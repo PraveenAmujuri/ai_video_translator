@@ -47,7 +47,7 @@ async def process_translation_job(job_id: str):
 async def _run_pipeline(job_id: str):
 
     from services.media_service import (
-        extract_youtube_streams,
+        download_youtube_video,
         download_audio_only,
         download_video_only,
         merge_video_audio,
@@ -95,7 +95,7 @@ async def _run_pipeline(job_id: str):
                 job_id,
                 status=JobStatus.DOWNLOADING,
                 progress=10,
-                message="Extracting streams...",
+                message="Checking stream bypass...",
             )
 
         # Explicitly catch both None values and empty string overrides safely
@@ -108,30 +108,43 @@ async def _run_pipeline(job_id: str):
             video_stream_bypass = None
             logger.info("No extension link found. Falling back to native server-side extraction track.")
 
-        streams = await extract_youtube_streams(
-            url=job.youtube_url,
-            client_stream_url=video_stream_bypass
-        )
-        video_stream_url = streams["video_url"]
-        audio_stream_url = streams["audio_url"]
-
-        async with AsyncSessionLocal() as db:
-            await update_job(
-                db,
+        if video_stream_bypass:
+            async with AsyncSessionLocal() as db:
+                await update_job(
+                    db,
+                    job_id,
+                    progress=20,
+                    message="Downloading video via bypass track...",
+                )
+            video_path = await download_video_only(
+                video_stream_bypass,
                 job_id,
-                progress=20,
-                message="Downloading audio and video...",
             )
-
-        audio_path = await download_audio_only(
-            audio_stream_url,
-            job_id,
-        )
-
-        video_path = await download_video_only(
-            video_stream_url,
-            job_id,
-        )
+            audio_path = await download_audio_only(
+                video_stream_bypass,
+                job_id,
+            )
+        else:
+            async with AsyncSessionLocal() as db:
+                await update_job(
+                    db,
+                    job_id,
+                    progress=15,
+                    message="Acquiring YouTube video stream...",
+                )
+            video_path = await download_youtube_video(job.youtube_url, job_id)
+            
+            async with AsyncSessionLocal() as db:
+                await update_job(
+                    db,
+                    job_id,
+                    progress=20,
+                    message="Extracting audio track locally...",
+                )
+            audio_path = await download_audio_only(
+                str(video_path),
+                job_id,
+            )
     elif is_audio_file:
         # Direct Audio Upload Pathway
         async with AsyncSessionLocal() as db:

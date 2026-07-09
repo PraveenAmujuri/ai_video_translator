@@ -22,139 +22,135 @@ def extract_video_id(url: str) -> str:
     raise ValueError(f"Could not extract video ID from YouTube URL: {url}")
 
 
-async def get_innertube_video_url(video_id: str) -> str:
-    api_key = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
-    url = f"https://www.youtube.com/youtubei/v1/player?key={api_key}"
-    payload = {
-        "videoId": video_id,
-        "context": {
-            "client": {
-                "clientName": "ANDROID",
-                "clientVersion": "20.10.38",
-                "androidSdkVersion": 30
-            }
-        },
-        "racyCheckOk": True,
-        "contentCheckOk": True
-    }
-    async with httpx.AsyncClient() as client:
-        headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 11; en_US; Pixel 5; Build/RQ3A.210705.001)"
-        }
-        res = await client.post(url, json=payload, headers=headers)
-        if res.status_code == 200:
-            data = res.json()
-            streaming_data = data.get("streamingData", {})
-            formats = streaming_data.get("adaptiveFormats", []) + streaming_data.get("formats", [])
-            video_formats = [f for f in formats if f.get("mimeType", "").startswith("video/") and f.get("url")]
-            if video_formats:
-                # Prefer H264 (avc1) for maximum HTML5 video web player compatibility
-                h264_formats = [f for f in video_formats if 'codecs="avc' in f.get("mimeType", "")]
-                if h264_formats:
-                    return h264_formats[0]["url"]
-                return video_formats[0]["url"]
-        raise RuntimeError("Failed to extract video stream from InnerTube API.")
+async def has_video_stream(file_path: Path) -> bool:
+    cmd = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v",
+        "-show_entries", "stream=codec_type",
+        "-of", "json",
+        str(file_path),
+    ]
+    returncode, stdout, stderr = await run_subprocess(cmd)
+    if returncode == 0:
+        import json
+        try:
+            data = json.loads(stdout)
+            return len(data.get("streams", [])) > 0
+        except Exception:
+            pass
+    return False
 
 
-async def extract_youtube_streams(url: str, client_stream_url: Optional[str] = None):
-    """
-    Extracts stable streaming audio and video links natively via RapidAPI and InnerTube.
-    Includes a direct passthrough interceptor map for client-extracted browser tracks,
-    and a local storage auto-detector boundary bypass.
-    """
-    url = url.strip()
-
-    # If the system passes an absolute local file path pointing to our uploads space instead of an internet URL,
-    # skip scraping entirely and route the local disk path straight to your downstream pipelines!
-    if os.path.exists(url) or url.startswith("/") or "uploads/" in url or "downloads/" in url:
-        logger.info(f"📂 Pre-cached local binary asset file detected on disk: {url}. Bypassing network scrapers natively.")
-        return {
-            "title": "Local Binary Data Upload Stream",
-            "video_url": url,
-            "audio_url": url,
-            "duration": 0.0  # Captured dynamically below by your native ffprobe analyzer!
-        }
-
-    # --- CLIENT-SIDE PASSTHROUGH INTERCEPTOR GATE ---
-    if client_stream_url:
-        logger.info("Direct database-persisted client stream asset detected. Bypassing cloud extraction barriers cleanly.")
-        return {
-            "title": "Client Authenticated Source Stream",
-            "video_url": client_stream_url,
-            "audio_url": client_stream_url,
-            "duration": 0.0  
-        }
-
-    is_direct_stream = "googlevideo.com" in url or "manifest" in url or url.startswith("http")
-    is_raw_page = "youtube.com/watch" in url or "youtu.be/" in url
-
-    if is_direct_stream and not is_raw_page:
-        logger.info("Direct browser-extracted stream asset target detected in URL field.")
-        return {
-            "title": "Client Authenticated Source Stream",
-            "video_url": url,
-            "audio_url": url,
-            "duration": 0.0
-        }
-
-    logger.info(f"Upstream request layer activated: Resolving streams for: {url}")
-
-    try:
-        video_id = extract_video_id(url)
-    except Exception as e:
-        logger.error(f"URL parsing failure: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Invalid YouTube URL: {str(e)}")
-
+async def download_youtube_video(url: str, job_id: str) -> Path:
+    video_id = extract_video_id(url)
+    api_url = "https://youtube-info-download-api.p.rapidapi.com/ajax/download.php"
     headers = {
-        "x-rapidapi-host": settings.RAPIDAPI_HOST,
+        "x-rapidapi-host": "youtube-info-download-api.p.rapidapi.com",
         "x-rapidapi-key": settings.RAPIDAPI_KEY
     }
-
-    audio_url = None
-    title = "YouTube Video"
-    duration = 0.0
-
+    
+    # Try requesting highest quality (1080) first
+    formats_to_try = ["1080", "720", "480", "360"]
+    initial_data = None
+    
     async with httpx.AsyncClient() as client:
-        # RapidAPI polling loop
-        for attempt in range(15):
+        for fmt in formats_to_try:
+            params = {
+                "format": fmt,
+                "add_info": "0",
+                "url": url,
+                "allow_extended_duration": "false",
+                "no_merge": "false"
+            }
             try:
-                res = await client.get(f"https://{settings.RAPIDAPI_HOST}/dl?id={video_id}", headers=headers, timeout=10.0)
+                logger.info(f"Initiating YouTube video download from RapidAPI with format {fmt}...")
+                res = await client.get(api_url, headers=headers, params=params, timeout=20.0)
                 if res.status_code == 200:
                     data = res.json()
-                    status = data.get("status")
-                    if status == "ok":
-                        audio_url = data.get("link")
-                        title = data.get("title", "YouTube Video")
-                        duration = float(data.get("duration", 0.0))
+                    # The API returns success: true when conversion starts or if cached
+                    if data.get("success") or data.get("progress_url") or data.get("id"):
+                        initial_data = data
                         break
-                    elif status == "processing":
-                        logger.info(f"RapidAPI audio conversion in progress (attempt {attempt+1}/15)...")
-                        await asyncio.sleep(1.0)
                     else:
-                        raise RuntimeError(f"RapidAPI failed with message: {data.get('msg')}")
+                        logger.warning(f"RapidAPI success=False for format {fmt}: {data.get('text')}")
                 else:
-                    logger.warning(f"RapidAPI endpoint returned status {res.status_code} on attempt {attempt+1}")
-                    await asyncio.sleep(1.0)
-            except Exception as attempt_err:
-                logger.warning(f"RapidAPI attempt {attempt+1} encountered error: {str(attempt_err)}")
-                await asyncio.sleep(1.0)
-
-    if not audio_url:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to resolve stable audio stream from converter API."
-        )
-
-    # Resolve video stream URL via InnerTube API natively
-    video_url = await get_innertube_video_url(video_id)
-
-    return {
-        "title": title,
-        "video_url": video_url,
-        "audio_url": audio_url,
-        "duration": duration
-    }
+                    logger.warning(f"RapidAPI request returned status {res.status_code} for format {fmt}")
+            except Exception as e:
+                logger.error(f"Error querying RapidAPI for format {fmt}: {str(e)}")
+                
+        if not initial_data:
+            raise RuntimeError("Failed to resolve or initiate video download link from RapidAPI.")
+            
+        progress_url = initial_data.get("progress_url")
+        download_url = initial_data.get("url") or initial_data.get("download_url")
+        
+        if not download_url:
+            if not progress_url:
+                raise RuntimeError("RapidAPI did not return a valid download link or progress endpoint.")
+                
+            logger.info(f"Polling dynamic progress endpoint: {progress_url}")
+            resolved = False
+            # Poll every 2 seconds for a maximum of 45 attempts (90 seconds)
+            for attempt in range(45):
+                await asyncio.sleep(2.0)
+                try:
+                    poll_res = await client.get(progress_url, timeout=15.0)
+                    if poll_res.status_code == 200:
+                        poll_data = poll_res.json()
+                        text = poll_data.get("text", "")
+                        progress = poll_data.get("progress", 0)
+                        logger.info(f"RapidAPI progress polling (attempt {attempt+1}): {text} ({progress}%)")
+                        
+                        if (poll_data.get("success") == 1 or poll_data.get("success") is True) and poll_data.get("download_url"):
+                            download_url = poll_data.get("download_url")
+                            resolved = True
+                            break
+                        elif poll_data.get("success") == 0:
+                            continue
+                        else:
+                            raise RuntimeError(f"RapidAPI progress polling error: {poll_data}")
+                    else:
+                        logger.warning(f"RapidAPI progress check HTTP status: {poll_res.status_code}")
+                except Exception as poll_err:
+                    logger.warning(f"RapidAPI progress check failed: {str(poll_err)}")
+                    
+            if not resolved or not download_url:
+                raise RuntimeError("YouTube conversion process timed out or failed on the conversion API.")
+                
+        output_dir = settings.UPLOAD_DIR / job_id
+        output_dir.mkdir(parents=True, exist_ok=True)
+        video_path = output_dir / "video.mp4"
+        
+        logger.info(f"Downloading MP4 stream from resolved link: {download_url}")
+        async with client.stream("GET", download_url, timeout=60.0) as response:
+            if response.status_code != 200:
+                raise RuntimeError(f"Failed to download resolved MP4 video stream. HTTP status: {response.status_code}")
+            with open(video_path, "wb") as f:
+                async for chunk in response.aiter_bytes():
+                    f.write(chunk)
+                    
+        logger.info(f"Successfully downloaded YouTube video to {video_path}")
+        
+        # Verify the file exists and is a valid MP4 containing both video and audio streams
+        if not video_path.exists() or video_path.stat().st_size == 0:
+            raise RuntimeError("Downloaded video file is empty or missing from disk.")
+            
+        has_v = await has_video_stream(video_path)
+        has_a = await has_audio_stream(video_path)
+        
+        if not has_v or not has_a:
+            if video_path.exists():
+                try:
+                    video_path.unlink()
+                except Exception:
+                    pass
+            raise RuntimeError(
+                f"Invalid download: Selected stream must be a valid MP4 containing both video and audio. "
+                f"Has video: {has_v}, Has audio: {has_a}"
+            )
+            
+        return video_path
 async def download_audio_only(
     url: str,
     job_id: str,
