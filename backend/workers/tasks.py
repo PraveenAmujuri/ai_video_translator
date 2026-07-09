@@ -211,6 +211,7 @@ async def _run_pipeline(job_id: str):
         translated_segments,
         voice=voice,
         output_path=dubbed_audio_path,
+        total_duration=job.duration,
     )
 
     subtitle_dir = settings.OUTPUT_DIR / job_id

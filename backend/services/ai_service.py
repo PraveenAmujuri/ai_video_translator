@@ -319,100 +319,69 @@ async def generate_tts_audio(
 
     loop = asyncio.get_event_loop()
 
-    texts = []
-
+    valid_segments = []
     for seg in segments:
-
         text = seg.get("translated") or seg.get("text", "")
-
         text = text.strip()
-
         if text:
-            texts.append(text)
+            valid_segments.append({
+                "text": text,
+                "start": float(seg.get("start", 0.0))
+            })
 
-    if not texts:
-
-        raise RuntimeError(
-            "No text available for TTS"
-        )
+    if not valid_segments:
+        raise RuntimeError("No text available for TTS")
 
     logger.info(
-        f"Piper segment count: {len(texts)}"
+        f"Piper segment count: {len(valid_segments)}"
     )
 
     temp_wavs = []
 
     def _generate_segment_audio():
-
-        for i, text in enumerate(texts):
-
+        for i, seg in enumerate(valid_segments):
+            text = seg["text"]
             logger.info(
-                f"Synthesizing segment {i+1}/{len(texts)}"
+                f"Synthesizing segment {i+1}/{len(valid_segments)}"
             )
 
             temp_file = tempfile.NamedTemporaryFile(
                 suffix=".wav",
                 delete=False,
             )
-
             temp_path = Path(temp_file.name)
-
             temp_file.close()
 
             with wave.open(
                 str(temp_path),
                 "wb",
             ) as wav_file:
-
                 wav_file.setnchannels(1)
-
                 wav_file.setsampwidth(2)
-
                 wav_file.setframerate(
                     voice_model.config.sample_rate
                 )
 
-                chunks = voice_model.synthesize(
-                    text
-                )
-
+                chunks = voice_model.synthesize(text)
                 wrote_audio = False
 
                 for chunk in chunks:
-
-                    if hasattr(
-                        chunk,
-                        "audio_int16_bytes"
-                    ):
-
-                        wav_file.writeframes(
-                            chunk.audio_int16_bytes
-                        )
-
+                    if hasattr(chunk, "audio_int16_bytes"):
+                        wav_file.writeframes(chunk.audio_int16_bytes)
                         wrote_audio = True
-
                     elif hasattr(chunk, "audio"):
-
-                        wav_file.writeframes(
-                            chunk.audio
-                        )
-
+                        wav_file.writeframes(chunk.audio)
                         wrote_audio = True
-
                     elif isinstance(chunk, bytes):
-
-                        wav_file.writeframes(
-                            chunk
-                        )
-
+                        wav_file.writeframes(chunk)
                         wrote_audio = True
 
                 if wrote_audio:
-
-                    temp_wavs.append(temp_path)
-
+                    temp_wavs.append({
+                        "path": temp_path,
+                        "start": seg["start"]
+                    })
                 else:
-
                     logger.warning(
                         f"No audio written for segment {i}"
                     )
@@ -426,83 +395,85 @@ async def generate_tts_audio(
     )
 
     if not temp_wavs:
+        raise RuntimeError("No valid audio segments generated")
 
-        raise RuntimeError(
-            "No valid audio segments generated"
+    # TIMELINE RECONSTRUCTION & MIXING VIA FFMPEG
+    from core.utils import run_subprocess
+
+    # Get total video/audio duration
+    total_duration = kwargs.get("total_duration")
+    if not total_duration:
+        total_duration = max([float(seg.get("end", 0.0)) for seg in segments]) if segments else 1.0
+    total_duration = max(1.0, float(total_duration))
+
+    cmd = ["ffmpeg", "-y"]
+    
+    # 1. Add each synthesized segment file as input
+    for wav in temp_wavs:
+        cmd.extend(["-i", str(wav["path"])])
+
+    # 2. Add anullsrc as background padding input to preserve duration
+    cmd.extend([
+        "-f", "lavfi",
+        "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+        "-t", f"{total_duration:.4f}"
+    ])
+
+    filter_parts = []
+    num_segments = len(temp_wavs)
+
+    # 3. Normalize format to stereo 44.1kHz s16, then delay each segment
+    for i in range(num_segments):
+        start_time = temp_wavs[i]["start"]
+        delay_ms = int(start_time * 1000)
+        filter_parts.append(
+            f"[{i}:a]aresample=44100,aformat=sample_fmts=s16:channel_layouts=stereo,adelay={delay_ms}|{delay_ms}[a{i}]"
         )
 
-    # CONCAT WAV FILES
-
-    concat_txt = (
-        output_path.parent / "concat.txt"
+    # 4. Mix delayed inputs + silent background track (input index num_segments)
+    mix_inputs = "".join(f"[a{i}]" for i in range(num_segments)) + f"[{num_segments}:a]"
+    # dropout_transition=99999 maintains constant volume scaling factor preventing volume drops
+    filter_parts.append(
+        f"{mix_inputs}amix=inputs={num_segments+1}:dropout_transition=99999[mixed]"
+    )
+    # volume boost to counteract amix normalization, followed by limiter to prevent clipping
+    filter_parts.append(
+        f"[mixed]volume={num_segments+1},alimiter=limit=0.95[out_boost]"
     )
 
-    with open(
-        concat_txt,
-        "w",
-        encoding="utf-8"
-    ) as f:
+    cmd.extend(["-filter_complex", ";".join(filter_parts)])
+    cmd.extend(["-map", "[out_boost]"])
 
-        for wav in temp_wavs:
-
-            f.write(
-                f"file '{wav.as_posix()}'\n"
-            )
-
-    from core.utils import run_subprocess
     if output_path.suffix.lower() == ".wav":
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(concat_txt),
+        cmd.extend([
             "-vn",
-            "-c:a",
-            "pcm_s16le",
+            "-c:a", "pcm_s16le",
             str(output_path),
-        ]
+        ])
     else:
-        cmd = [
-            "ffmpeg",
-            "-y",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(concat_txt),
+        cmd.extend([
             "-vn",
-            "-ar",
-            "44100",
-            "-ac",
-            "2",
-            "-c:a",
-            "libmp3lame",
-            "-b:a",
-            "192k",
+            "-ar", "44100",
+            "-ac", "2",
+            "-c:a", "libmp3lame",
+            "-b:a", "192k",
             str(output_path),
-        ]
+        ])
 
-    returncode, stdout, stderr = await run_subprocess(
-        cmd
-    )
+    returncode, stdout, stderr = await run_subprocess(cmd)
 
+    # Cleanup temp segment wav files
     for wav in temp_wavs:
-
-        if wav.exists():
-            wav.unlink()
-
-    if concat_txt.exists():
-        concat_txt.unlink()
+        path = wav["path"]
+        if path.exists():
+            try:
+                path.unlink()
+            except Exception as e:
+                logger.warning(f"Failed to delete temp wav {path}: {e}")
 
     if returncode != 0:
-
         raise RuntimeError(
-            f"FFmpeg concat failed: {stderr}"
+            f"FFmpeg timeline mixing failed: {stderr}"
         )
 
     if not output_path.exists():
