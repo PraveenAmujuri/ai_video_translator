@@ -335,17 +335,19 @@ class Media {
 
     const x = this.plane.position.x;
     const H = this.viewport.width / 2;
+    const isMobile = this.screen.width < 768;
+    const effectiveBend = isMobile ? this.bend * 0.4 : this.bend;
 
-    if (this.bend === 0) {
+    if (effectiveBend === 0) {
       this.plane.position.y = 0;
       this.plane.rotation.z = 0;
     } else {
-      const B_abs = Math.abs(this.bend);
+      const B_abs = Math.abs(effectiveBend);
       const R = (H * H + B_abs * B_abs) / (2 * B_abs);
       const effectiveX = Math.min(Math.abs(x), H);
 
       const arc = R - Math.sqrt(R * R - effectiveX * effectiveX);
-      if (this.bend > 0) {
+      if (effectiveBend > 0) {
         this.plane.position.y = -arc;
         this.plane.rotation.z = -Math.sign(x) * Math.asin(effectiveX / R);
       } else {
@@ -376,15 +378,14 @@ class Media {
 
     const planeOffset = this.plane.scale.x / 2;
     const viewportOffset = this.viewport.width / 2;
-    this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
-    this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
-    if (direction === 'right' && this.isBefore) {
+
+    while (this.plane.position.x + planeOffset < -viewportOffset) {
       this.extra -= this.widthTotal;
-      this.isBefore = this.isAfter = false;
+      this.plane.position.x += this.widthTotal;
     }
-    if (direction === 'left' && this.isAfter) {
+    while (this.plane.position.x - planeOffset > viewportOffset) {
       this.extra += this.widthTotal;
-      this.isBefore = this.isAfter = false;
+      this.plane.position.x -= this.widthTotal;
     }
   }
   onResize({ screen, viewport } = {}) {
@@ -395,11 +396,19 @@ class Media {
         this.plane.program.uniforms.uViewportSizes.value = [this.viewport.width, this.viewport.height];
       }
     }
-    this.scale = this.screen.height / 1500;
-    this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
-    this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+    this.extra = 0;
+    const isMobile = this.screen.width < 768;
+    if (isMobile) {
+      this.plane.scale.x = this.viewport.width * 0.45;
+      this.plane.scale.y = this.plane.scale.x * (450 / 350);
+      this.padding = 0.6;
+    } else {
+      this.scale = this.screen.height / 1500;
+      this.plane.scale.y = (this.viewport.height * (900 * this.scale)) / this.screen.height;
+      this.plane.scale.x = (this.viewport.width * (700 * this.scale)) / this.screen.width;
+      this.padding = 2;
+    }
     this.plane.program.uniforms.uPlaneSizes.value = [this.plane.scale.x, this.plane.scale.y];
-    this.padding = 2;
     this.width = this.plane.scale.x + this.padding;
     this.widthTotal = this.width * this.length;
     this.x = this.width * this.index;
@@ -416,12 +425,14 @@ class App {
       borderRadius = 0,
       font = 'bold 30px Figtree',
       scrollSpeed = 2,
-      scrollEase = 0.05
+      scrollEase = 0.05,
+      autoScrollSpeed = 0.05
     } = {}
   ) {
     document.documentElement.classList.remove('no-js');
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.autoScrollSpeed = autoScrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     
@@ -580,6 +591,14 @@ class App {
     const height = 2 * Math.tan(fov / 2) * this.camera.position.z;
     const width = height * this.camera.aspect;
     this.viewport = { width, height };
+    
+    // Reset scroll values on resize to align cards correctly
+    if (this.scroll) {
+      this.scroll.current = 0;
+      this.scroll.target = 0;
+      this.scroll.last = 0;
+    }
+
     if (this.medias) {
       this.medias.forEach(media => media.onResize({ screen: this.screen, viewport: this.viewport }));
     }
@@ -628,6 +647,9 @@ class App {
     if (!this.isIntersecting) {
       this.raf = null;
       return;
+    }
+    if (!this.isDown && !this.isMouseOver) {
+      this.scroll.target += this.autoScrollSpeed;
     }
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
@@ -704,7 +726,8 @@ export default function CircularGallery({
   font = 'bold 30px Figtree',
   fontUrl,
   scrollSpeed = 2,
-  scrollEase = 0.05
+  scrollEase = 0.05,
+  autoScrollSpeed = 0.05
 }) {
   const containerRef = useRef(null);
   useEffect(() => {
@@ -720,14 +743,15 @@ export default function CircularGallery({
         borderRadius,
         font: resolvedFont,
         scrollSpeed,
-        scrollEase
+        scrollEase,
+        autoScrollSpeed
       });
     });
     return () => {
       isMounted = false;
       if (app) app.destroy();
     };
-  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase, autoScrollSpeed]);
   return (
     <div
       className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
