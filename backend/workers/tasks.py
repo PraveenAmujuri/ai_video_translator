@@ -177,11 +177,12 @@ async def _run_pipeline(job_id: str):
         )
 
     # Measure and store media duration in database
+    measured_duration = None
     try:
-        duration = await get_media_duration(audio_path)
-        if duration > 0:
+        measured_duration = await get_media_duration(audio_path)
+        if measured_duration > 0:
             async with AsyncSessionLocal() as db:
-                job = await update_job(db, job_id, duration=duration)
+                job = await update_job(db, job_id, duration=measured_duration)
     except Exception as e:
         logger.warning(f"Failed to measure media duration: {e}")
 
@@ -221,7 +222,7 @@ async def _run_pipeline(job_id: str):
         translated_segments,
         voice=voice,
         output_path=dubbed_audio_path,
-        total_duration=job.duration,
+        total_duration=measured_duration or getattr(job, "duration", None),
     )
 
     subtitle_dir = settings.OUTPUT_DIR / job_id
