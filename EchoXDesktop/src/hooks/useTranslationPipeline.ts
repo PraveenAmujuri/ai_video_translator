@@ -13,7 +13,6 @@ import {
   tauriDownloadJobSubtitles,
   tauriCleanupLocalJobFiles,
   tauriDownloadOutputVideo,
-  tauriGetJobVttData,
 } from "../lib/tauri-commands";
 import type {
   PipelineState,
@@ -113,6 +112,7 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
 
           if (progress.status === "completed") {
             let localVideoUrl: string | undefined = undefined;
+            let localVttPath: string | null = null;
             if (localSeparationActive && instrumentalPath) {
               setState((prev) => ({
                 ...prev,
@@ -127,7 +127,7 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                     logs: [...prev.logs, makeLog("Downloading subtitles for local video embedding...")],
                   }));
                   try {
-                    await tauriDownloadJobSubtitles(jobId);
+                    localVttPath = await tauriDownloadJobSubtitles(jobId);
                   } catch (subErr) {
                     console.error("Failed to download subtitles for local embedding:", subErr);
                   }
@@ -188,8 +188,11 @@ export function useTranslationPipeline(): UseTranslationPipelineResult {
                 logs: [...prev.logs, makeLog("Downloading translated captions track...")],
               }));
               try {
-                const vttText = await tauriGetJobVttData(jobId);
-                localVttUrl = "data:text/vtt;charset=utf-8," + encodeURIComponent(vttText);
+                let vttPath = localVttPath;
+                if (!vttPath) {
+                  vttPath = await tauriDownloadJobSubtitles(jobId);
+                }
+                localVttUrl = convertFileSrc(vttPath);
               } catch (vttErr) {
                 console.error("Failed to load VTT captions track:", vttErr);
               }

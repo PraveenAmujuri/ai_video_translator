@@ -954,34 +954,53 @@ pub async fn download_job_subtitles(
         .await
         .map_err(|e| format!("Failed to create job directory: {}", e))?;
 
-    let dest_path = temp_dir.join("subtitles.srt");
-
-    let download_url = format!("https://api.praveenai.tech/outputs/{}/subtitles.srt", job_id);
     let client = reqwest::Client::new();
-    let response = client.get(&download_url).send().await
-        .map_err(|e| format!("Failed to connect to backend: {}", e))?;
 
-    if !response.status().is_success() {
-        return Err(format!("Backend returned status {}", response.status()));
+    // 1. Download subtitles.srt for local FFmpeg merging
+    let srt_dest = temp_dir.join("subtitles.srt");
+    let srt_url = format!("https://api.praveenai.tech/outputs/{}/subtitles.srt", job_id);
+    let srt_res = client.get(&srt_url).send().await
+        .map_err(|e| format!("Failed to fetch SRT subtitles: {}", e))?;
+
+    if srt_res.status().is_success() {
+        let mut file = fs::File::create(&srt_dest)
+            .await
+            .map_err(|e| format!("Failed to create local SRT file: {}", e))?;
+        let mut stream = srt_res.bytes_stream();
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(|e| format!("SRT stream read error: {}", e))?;
+            file.write_all(&chunk)
+                .await
+                .map_err(|e| format!("SRT file write error: {}", e))?;
+        }
+        let _ = file.flush().await;
     }
 
-    let mut file = fs::File::create(&dest_path)
-        .await
-        .map_err(|e| format!("Failed to create local subtitle file: {}", e))?;
+    // 2. Download subtitles.vtt for frontend player track loading
+    let vtt_dest = temp_dir.join("subtitles.vtt");
+    let vtt_url = format!("https://api.praveenai.tech/outputs/{}/subtitles.vtt", job_id);
+    let vtt_res = client.get(&vtt_url).send().await
+        .map_err(|e| format!("Failed to fetch VTT subtitles: {}", e))?;
 
-    let mut stream = response.bytes_stream();
+    if !vtt_res.status().is_success() {
+        return Err(format!("Backend VTT returned status {}", vtt_res.status()));
+    }
+
+    let mut file = fs::File::create(&vtt_dest)
+        .await
+        .map_err(|e| format!("Failed to create local VTT file: {}", e))?;
+    let mut stream = vtt_res.bytes_stream();
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| format!("Stream read error: {}", e))?;
+        let chunk = chunk.map_err(|e| format!("VTT stream read error: {}", e))?;
         file.write_all(&chunk)
             .await
-            .map_err(|e| format!("File write error: {}", e))?;
+            .map_err(|e| format!("VTT file write error: {}", e))?;
     }
-
     file.flush()
         .await
-        .map_err(|e| format!("Failed to flush file: {}", e))?;
+        .map_err(|e| format!("Failed to flush VTT file: {}", e))?;
 
-    Ok(dest_path.to_str().unwrap().to_string())
+    Ok(vtt_dest.to_str().unwrap().to_string())
 }
 
 #[tauri::command]
