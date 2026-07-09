@@ -336,6 +336,19 @@ async def generate_tts_audio(
         f"Piper segment count: {len(valid_segments)}"
     )
 
+    def get_duration_sync(file_path: Path) -> float:
+        import subprocess
+        import json
+        cmd = ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(file_path)]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode == 0:
+            try:
+                data = json.loads(res.stdout)
+                return float(data.get("format", {}).get("duration", 0.0))
+            except Exception:
+                pass
+        return 0.0
+
     temp_wavs = []
 
     def _generate_segment_audio():
@@ -381,6 +394,8 @@ async def generate_tts_audio(
                         "path": temp_path,
                         "start": seg["start"]
                     })
+                    seg_dur = get_duration_sync(temp_path)
+                    logger.info(f"[DURATION_DIAGNOSTIC] Synthesized segment {i+1}/{len(valid_segments)} duration: {seg_dur}s (start={seg['start']}s)")
                 else:
                     logger.warning(
                         f"No audio written for segment {i}"
@@ -460,6 +475,9 @@ async def generate_tts_audio(
             str(output_path),
         ])
 
+    logger.info(f"[DURATION_DIAGNOSTIC] total_duration value passed: {total_duration}")
+    logger.info(f"[DURATION_DIAGNOSTIC] FFmpeg reconstruction command:\n{' '.join(cmd)}")
+
     returncode, stdout, stderr = await run_subprocess(cmd)
 
     # Cleanup temp segment wav files
@@ -475,6 +493,9 @@ async def generate_tts_audio(
         raise RuntimeError(
             f"FFmpeg timeline mixing failed: {stderr}"
         )
+
+    dubbed_dur = get_duration_sync(output_path)
+    logger.info(f"[DURATION_DIAGNOSTIC] Reconstructed dubbed audio duration: {dubbed_dur}s")
 
     if not output_path.exists():
 

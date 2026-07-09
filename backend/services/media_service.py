@@ -336,6 +336,14 @@ async def merge_video_audio(
     # Verify inputs
     await log_media_info(video_path, "Input Video")
     await log_media_info(audio_path, "Dubbed Audio")
+    
+    # Loud diagnostic headers
+    v_dur = await get_media_duration(video_path)
+    a_dur = await get_media_duration(audio_path)
+    logger.info(f"[DURATION_DIAGNOSTIC] merge_video_audio called with Input Video duration={v_dur}s and Dubbed Audio duration={a_dur}s")
+    
+    limit_args = ["-t", f"{v_dur:.4f}"] if v_dur > 0 else ["-shortest"]
+
     if subtitle_path:
         await log_media_info(subtitle_path, "Subtitle File")
         
@@ -373,8 +381,8 @@ async def merge_video_audio(
                 "-c:a", "aac",
             ])
             
+        cmd.extend(limit_args)
         cmd.extend([
-            "-shortest",
             "-movflags", "+faststart",
             str(output_path)
         ])
@@ -408,8 +416,8 @@ async def merge_video_audio(
                 "-c:a", "aac",
             ])
             
+        cmd.extend(limit_args)
         cmd.extend([
-            "-shortest",
             "-movflags", "+faststart",
             str(output_path)
         ])
@@ -455,8 +463,8 @@ async def merge_video_audio(
                     "-c:a", "aac",
                 ])
                 
+            cmd.extend(limit_args)
             cmd.extend([
-                "-shortest",
                 "-movflags", "+faststart",
                 str(output_path)
             ])
@@ -492,8 +500,8 @@ async def merge_video_audio(
                     "-c:a", "aac",
                 ])
                 
+            cmd.extend(limit_args)
             cmd.extend([
-                "-shortest",
                 "-movflags", "+faststart",
                 str(output_path)
             ])
@@ -509,6 +517,8 @@ async def merge_video_audio(
 
     logger.info(f"[DEBUG LOG] merge_video_audio completed in {time.time() - start_time:.2f} seconds")
     await log_media_info(output_path, "Merged Output Video")
+    final_dur = await get_media_duration(output_path)
+    logger.info(f"[DURATION_DIAGNOSTIC] Final output.mp4 duration: {final_dur}s")
     return output_path
 
 
@@ -591,6 +601,9 @@ async def create_static_video(
     if subtitle_path:
         await log_media_info(subtitle_path, "Static Video Input Subtitle")
         
+    audio_dur = await get_media_duration(audio_path)
+    limit_args = ["-t", f"{audio_dur:.4f}"] if audio_dur > 0 else ["-shortest"]
+
     output_video_path.parent.mkdir(parents=True, exist_ok=True)
     
     if subtitle_path:
@@ -612,7 +625,7 @@ async def create_static_video(
             "-c:s", "mov_text",
             "-metadata:s:s:0", f"language={language}",
             "-metadata:s:s:0", f"title={language.upper()} Subtitles",
-            "-shortest",
+            *limit_args,
             str(output_video_path),
         ]
     else:
@@ -627,7 +640,7 @@ async def create_static_video(
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "192k",
-            "-shortest",
+            *limit_args,
             str(output_video_path),
         ]
     
