@@ -432,13 +432,13 @@ async def generate_tts_audio(
 
     # 4. Mix delayed inputs + silent background track (input index num_segments)
     mix_inputs = "".join(f"[a{i}]" for i in range(num_segments)) + f"[{num_segments}:a]"
-    # dropout_transition=99999 maintains constant volume scaling factor preventing volume drops
+    # normalize=0 prevents volume scaling drops; dropout_transition=99999 is a safety fallback for volume stability
     filter_parts.append(
-        f"{mix_inputs}amix=inputs={num_segments+1}:dropout_transition=99999[mixed]"
+        f"{mix_inputs}amix=inputs={num_segments+1}:normalize=0:dropout_transition=99999[mixed]"
     )
-    # volume boost to counteract amix normalization, followed by limiter to prevent clipping
+    # alimiter prevents digital clipping in overlapping dialogue regions
     filter_parts.append(
-        f"[mixed]volume={num_segments+1},alimiter=limit=0.95[out_boost]"
+        f"[mixed]alimiter=limit=0.95[out_boost]"
     )
 
     cmd.extend(["-filter_complex", ";".join(filter_parts)])

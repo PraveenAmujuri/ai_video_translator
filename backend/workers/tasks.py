@@ -53,6 +53,7 @@ async def _run_pipeline(job_id: str):
         merge_video_audio,
         generate_audio_output,
         create_static_video,
+        get_media_duration,
     )
 
     from services.ai_service import (
@@ -174,6 +175,15 @@ async def _run_pipeline(job_id: str):
             str(video_path),
             job_id,
         )
+
+    # Measure and store media duration in database
+    try:
+        duration = await get_media_duration(audio_path)
+        if duration > 0:
+            async with AsyncSessionLocal() as db:
+                job = await update_job(db, job_id, duration=duration)
+    except Exception as e:
+        logger.warning(f"Failed to measure media duration: {e}")
 
     async with AsyncSessionLocal() as db:
         await update_job(
