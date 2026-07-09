@@ -188,27 +188,33 @@ impl SeparationEngine for OnnxSeparationEngine {
         println!("[engine] Extracting ZIP to: {}", dir.display());
 
         let extract_status = if cfg!(target_os = "windows") {
-            tokio::process::Command::new("powershell")
-                .args([
-                    "-Command",
-                    &format!(
-                        "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
-                        zip_path.display(),
-                        dir.display()
-                    ),
-                ])
-                .status()
+            let mut cmd = tokio::process::Command::new("powershell");
+            cmd.args([
+                "-Command",
+                &format!(
+                    "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
+                    zip_path.display(),
+                    dir.display()
+                ),
+            ]);
+            #[cfg(target_os = "windows")]
+            {
+                #[allow(unused_imports)]
+                use std::os::windows::process::CommandExt;
+                cmd.creation_flags(0x08000000);
+            }
+            cmd.status()
                 .await
                 .map_err(|e| format!("PowerShell extraction failed: {}", e))?
         } else {
-            tokio::process::Command::new("unzip")
-                .args([
-                    "-o",
-                    zip_path.to_str().unwrap(),
-                    "-d",
-                    dir.to_str().unwrap(),
-                ])
-                .status()
+            let mut cmd = tokio::process::Command::new("unzip");
+            cmd.args([
+                "-o",
+                zip_path.to_str().unwrap(),
+                "-d",
+                dir.to_str().unwrap(),
+            ]);
+            cmd.status()
                 .await
                 .map_err(|e| format!("unzip failed: {}", e))?
         };
@@ -647,21 +653,27 @@ pub async fn run_local_audio_separation(
 
     // Step 1: Local FFmpeg Stereo 44.1kHz Audio Extraction
     println!("[separation] Extracting audio from {}", input_path);
-    let extract_status = tokio::process::Command::new("ffmpeg")
-        .args([
-            "-y",
-            "-i",
-            &input_path,
-            "-vn",
-            "-acodec",
-            "pcm_s16le",
-            "-ar",
-            "44100",
-            "-ac",
-            "2",
-            extracted_audio_path.to_str().unwrap(),
-        ])
-        .status()
+    let mut cmd = tokio::process::Command::new("ffmpeg");
+    cmd.args([
+        "-y",
+        "-i",
+        &input_path,
+        "-vn",
+        "-acodec",
+        "pcm_s16le",
+        "-ar",
+        "44100",
+        "-ac",
+        "2",
+        extracted_audio_path.to_str().unwrap(),
+    ]);
+    #[cfg(target_os = "windows")]
+    {
+        #[allow(unused_imports)]
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    let extract_status = cmd.status()
         .await
         .map_err(|e| format!("Local FFmpeg execution failed: {}", e))?;
 
@@ -855,9 +867,15 @@ pub async fn run_local_audio_mixing(
 
     println!("[mixing] Spawning FFmpeg command: ffmpeg {}", args.join(" "));
 
-    let status = tokio::process::Command::new("ffmpeg")
-        .args(&args)
-        .status()
+    let mut cmd = tokio::process::Command::new("ffmpeg");
+    cmd.args(&args);
+    #[cfg(target_os = "windows")]
+    {
+        #[allow(unused_imports)]
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    let status = cmd.status()
         .await
         .map_err(|e| format!("Local FFmpeg merge failed: {}", e))?;
 

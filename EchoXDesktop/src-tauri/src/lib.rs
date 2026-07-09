@@ -359,22 +359,30 @@ async fn download_video(app: tauri::AppHandle, url: String) -> Result<String, St
     )
     .map_err(|e| e.to_string())?;
 
-    let mut child = tokio::process::Command::new(&exe_path)
-        .args([
-            "--no-playlist",
-            "--format",
-            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "--merge-output-format",
-            "mp4",
-            "--newline",
-            "--output",
-            &output_path_str,
-            &url,
-        ])
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()
+    let mut cmd = tokio::process::Command::new(&exe_path);
+    cmd.args([
+        "--no-playlist",
+        "--format",
+        "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "--merge-output-format",
+        "mp4",
+        "--newline",
+        "--output",
+        &output_path_str,
+        &url,
+    ])
+    .stdout(std::process::Stdio::piped())
+    .stderr(std::process::Stdio::piped())
+    .kill_on_drop(true);
+
+    #[cfg(target_os = "windows")]
+    {
+        #[allow(unused_imports)]
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
+    let mut child = cmd.spawn()
         .map_err(|e| format!("Failed to spawn yt-dlp: {}", e))?;
 
     let stdout = child
