@@ -147,12 +147,7 @@ async def extract_youtube_streams(url: str, client_stream_url: Optional[str] = N
         )
 
     # Resolve video stream URL via InnerTube API natively
-    try:
-        video_url = await get_innertube_video_url(video_id)
-    except Exception as e:
-        logger.error(f"InnerTube video extraction crash: {str(e)}")
-        # If video extraction fails, fallback to using the audio stream URL as a fallback frames container
-        video_url = audio_url
+    video_url = await get_innertube_video_url(video_id)
 
     return {
         "title": title,
