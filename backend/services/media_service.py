@@ -43,6 +43,10 @@ async def has_video_stream(file_path: Path) -> bool:
 
 
 async def download_youtube_video(url: str, job_id: str) -> Path:
+    url = url.strip()
+    if not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
+        
     video_id = extract_video_id(url)
     api_url = "https://youtube-info-download-api.p.rapidapi.com/ajax/download.php"
     headers = {
@@ -66,6 +70,17 @@ async def download_youtube_video(url: str, job_id: str) -> Path:
             try:
                 logger.info(f"Initiating YouTube video download from RapidAPI with format {fmt}...")
                 res = await client.get(api_url, headers=headers, params=params, timeout=20.0)
+                
+                # If we encounter a client error (e.g. 422 URL validation failure, 401 Unauthorized, 403 Forbidden)
+                # fail immediately instead of looping qualities, as it indicates a request/payload error.
+                if 400 <= res.status_code < 500:
+                    try:
+                        err_data = res.json()
+                        err_msg = err_data.get("message") or err_data.get("errors") or res.text
+                    except Exception:
+                        err_msg = res.text
+                    raise RuntimeError(f"RapidAPI request validation failed with status {res.status_code}: {err_msg}")
+                    
                 if res.status_code == 200:
                     data = res.json()
                     # The API returns success: true when conversion starts or if cached
@@ -76,6 +91,9 @@ async def download_youtube_video(url: str, job_id: str) -> Path:
                         logger.warning(f"RapidAPI success=False for format {fmt}: {data.get('text')}")
                 else:
                     logger.warning(f"RapidAPI request returned status {res.status_code} for format {fmt}")
+            except RuntimeError as re_err:
+                # Re-raise explicit validation runtime errors to stop the pipeline
+                raise re_err
             except Exception as e:
                 logger.error(f"Error querying RapidAPI for format {fmt}: {str(e)}")
                 
