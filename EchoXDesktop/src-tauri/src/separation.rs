@@ -75,14 +75,28 @@ impl SeparationEngine for OnnxSeparationEngine {
         let model_path = dir.join("model.onnx");
         let info_path = model_info_path(app)?;
         
+        println!("[engine] is_installed() checking dir: {}", dir.display());
+        println!("[engine]   dylib  ({}) -> exists: {}", dylib_path.display(), dylib_path.exists());
+        println!("[engine]   model  ({}) -> exists: {}", model_path.display(), model_path.exists());
+        println!("[engine]   info   ({}) -> exists: {}", info_path.display(), info_path.exists());
+        
         if dylib_path.exists() && model_path.exists() && info_path.exists() {
             if let Ok(data) = fs::read_to_string(&info_path).await {
                 if let Ok(info) = serde_json::from_str::<ModelInfo>(&data) {
                     if info.version == "1.0.0" {
+                        println!("[engine] is_installed() -> true (version match)");
                         return Ok(true);
+                    } else {
+                        println!("[engine] is_installed() -> false (version mismatch: got {})", info.version);
                     }
+                } else {
+                    println!("[engine] is_installed() -> false (model_info.json parse error)");
                 }
+            } else {
+                println!("[engine] is_installed() -> false (cannot read model_info.json)");
             }
+        } else {
+            println!("[engine] is_installed() -> false (one or more required files missing)");
         }
         
         Ok(false)
@@ -90,17 +104,20 @@ impl SeparationEngine for OnnxSeparationEngine {
 
     async fn install(&self, app: &AppHandle) -> Result<bool, String> {
         if self.is_installed(app).await.unwrap_or(false) {
+            println!("[engine] install() -> already installed, skipping.");
             return Ok(true);
         }
 
         let dir = separation_dir_path(app)?;
+        println!("[engine] install() -> engine directory: {}", dir.display());
         fs::create_dir_all(&dir)
             .await
             .map_err(|e| format!("Failed to create separation directory: {}", e))?;
 
         let zip_path = dir.join("separation.zip");
+        println!("[engine] install() -> ZIP will be saved to: {}", zip_path.display());
 
-        // Download the engine ZIP package
+        // ── DOWNLOAD ────────────────────────────────────────────────────────────
         let _ = app.emit(
             "separation-download-progress",
             SeparationDownloadProgress {
@@ -109,6 +126,7 @@ impl SeparationEngine for OnnxSeparationEngine {
             },
         );
 
+        println!("[engine] Downloading from: {}", ENGINE_ZIP_URL);
         let client = reqwest::Client::new();
         let response = client
             .get(ENGINE_ZIP_URL)
@@ -121,6 +139,7 @@ impl SeparationEngine for OnnxSeparationEngine {
         }
 
         let total_size = response.content_length().unwrap_or(0);
+        println!("[engine] Download size: {} bytes", total_size);
         let mut file = fs::File::create(&zip_path)
             .await
             .map_err(|e| format!("Failed to create zip file: {}", e))?;
@@ -156,8 +175,9 @@ impl SeparationEngine for OnnxSeparationEngine {
             .await
             .map_err(|e| format!("Failed to flush downloaded zip: {}", e))?;
         drop(file);
+        println!("[engine] Download complete: {} bytes written to {}", downloaded, zip_path.display());
 
-        // Extract ZIP
+        // ── EXTRACT ─────────────────────────────────────────────────────────────
         let _ = app.emit(
             "separation-download-progress",
             SeparationDownloadProgress {
@@ -165,8 +185,9 @@ impl SeparationEngine for OnnxSeparationEngine {
                 status: "extracting".to_string(),
             },
         );
+        println!("[engine] Extracting ZIP to: {}", dir.display());
 
-        let status = if cfg!(target_os = "windows") {
+        let extract_status = if cfg!(target_os = "windows") {
             tokio::process::Command::new("powershell")
                 .args([
                     "-Command",
@@ -192,19 +213,107 @@ impl SeparationEngine for OnnxSeparationEngine {
                 .map_err(|e| format!("unzip failed: {}", e))?
         };
 
-        if !status.success() {
+        if !extract_status.success() {
+            let _ = fs::remove_file(&zip_path).await;
             return Err("Extraction command failed".to_string());
         }
 
-        // Cleanup zip file
-        let _ = fs::remove_file(zip_path).await;
+        let _ = fs::remove_file(&zip_path).await;
+        println!("[engine] Extraction complete. Scanning extracted contents in: {}", dir.display());
 
-        // Set permission on unix
+        // ── LOG WHAT WAS EXTRACTED ───────────────────────────────────────────────
+        if let Ok(mut read_dir) = tokio::fs::read_dir(&dir).await {
+            while let Ok(Some(entry)) = read_dir.next_entry().await {
+                println!("[engine]   found: {}", entry.path().display());
+            }
+        }
+
+        // ── FLATTEN NESTED FOLDER ────────────────────────────────────────────────
+        // ZIP archives often contain a single top-level folder (e.g. "separation-engine-win/").
+        // PowerShell Expand-Archive preserves that folder, so files land at:
+        //   <dir>/<top-folder>/model.onnx
+        // but the runtime expects them at:
+        //   <dir>/model.onnx
+        // We detect this case and move all contents up one level.
+        println!("[engine] Checking for nested top-level folder to flatten...");
+        let mut subdirs: Vec<PathBuf> = Vec::new();
+        let mut root_files: Vec<PathBuf> = Vec::new();
+
+        if let Ok(mut read_dir) = tokio::fs::read_dir(&dir).await {
+            while let Ok(Some(entry)) = read_dir.next_entry().await {
+                let path = entry.path();
+                if path.is_dir() {
+                    subdirs.push(path);
+                } else {
+                    root_files.push(path);
+                }
+            }
+        }
+
+        // If there is exactly one subdirectory and no files at the root, flatten it
+        if subdirs.len() == 1 && root_files.is_empty() {
+            let nested = &subdirs[0];
+            println!("[engine] Single nested folder detected: {} — flattening into parent.", nested.display());
+
+            let mut nested_entries = tokio::fs::read_dir(nested)
+                .await
+                .map_err(|e| format!("Cannot read nested dir {}: {}", nested.display(), e))?;
+
+            while let Ok(Some(entry)) = nested_entries.next_entry().await {
+                let src = entry.path();
+                let dest = dir.join(entry.file_name());
+                println!("[engine]   moving: {} -> {}", src.display(), dest.display());
+                tokio::fs::rename(&src, &dest)
+                    .await
+                    .map_err(|e| format!("Failed to move {} to {}: {}", src.display(), dest.display(), e))?;
+            }
+
+            // Remove the now-empty nested directory
+            let _ = tokio::fs::remove_dir(nested).await;
+            println!("[engine] Flatten complete. Removed empty folder: {}", nested.display());
+        } else {
+            println!("[engine] No nested folder to flatten ({} subdirs, {} root files).", subdirs.len(), root_files.len());
+        }
+
+        // ── VERIFY ALL REQUIRED FILES ────────────────────────────────────────────
+        let dylib_name = if cfg!(target_os = "windows") {
+            "onnxruntime.dll"
+        } else if cfg!(target_os = "macos") {
+            "libonnxruntime.dylib"
+        } else {
+            "libonnxruntime.so"
+        };
+
+        let dylib_path = dir.join(dylib_name);
+        let model_path = dir.join("model.onnx");
+
+        println!("[engine] Post-extraction verification:");
+        println!("[engine]   dylib  ({}) -> exists: {}", dylib_path.display(), dylib_path.exists());
+        println!("[engine]   model  ({}) -> exists: {}", model_path.display(), model_path.exists());
+
+        // Log the full contents of the engine directory now
+        if let Ok(mut read_dir) = tokio::fs::read_dir(&dir).await {
+            println!("[engine] Final engine directory contents:");
+            while let Ok(Some(entry)) = read_dir.next_entry().await {
+                let p = entry.path();
+                let size = tokio::fs::metadata(&p).await.map(|m| m.len()).unwrap_or(0);
+                println!("[engine]   {} ({} bytes)", p.display(), size);
+            }
+        }
+
+        if !dylib_path.exists() || !model_path.exists() {
+            return Err(format!(
+                "Engine installation failed: required files missing after extraction. \
+                 dylib={} (exists:{}), model={} (exists:{})",
+                dylib_path.display(), dylib_path.exists(),
+                model_path.display(), model_path.exists(),
+            ));
+        }
+
+        // ── UNIX PERMISSIONS ─────────────────────────────────────────────────────
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let dylib_name = if cfg!(target_os = "macos") { "libonnxruntime.dylib" } else { "libonnxruntime.so" };
-            let dylib_path = dir.join(dylib_name);
             if let Ok(meta) = fs::metadata(&dylib_path).await {
                 let mut perms = meta.permissions();
                 perms.set_mode(0o755);
@@ -212,7 +321,7 @@ impl SeparationEngine for OnnxSeparationEngine {
             }
         }
 
-        // Write metadata
+        // ── WRITE METADATA ───────────────────────────────────────────────────────
         let model_info = ModelInfo {
             model_name: "htdemucs_ft".to_string(),
             version: "1.0.0".to_string(),
@@ -224,10 +333,14 @@ impl SeparationEngine for OnnxSeparationEngine {
         };
 
         let info_path = model_info_path(app)?;
+        println!("[engine] Writing model_info.json to: {}", info_path.display());
         if let Ok(info_str) = serde_json::to_string(&model_info) {
-            let _ = fs::write(&info_path, info_str).await;
+            fs::write(&info_path, info_str)
+                .await
+                .map_err(|e| format!("Failed to write model_info.json: {}", e))?;
         }
 
+        println!("[engine] Installation complete and verified.");
         let _ = app.emit(
             "separation-download-progress",
             SeparationDownloadProgress {
@@ -258,8 +371,18 @@ impl SeparationEngine for OnnxSeparationEngine {
         let dylib_path = dir.join(dylib_name);
         let model_path = dir.join("model.onnx");
         
+        println!("[separation] separate() checking engine dir: {}", dir.display());
+        println!("[separation]   dylib ({}) -> exists: {}", dylib_path.display(), dylib_path.exists());
+        println!("[separation]   model ({}) -> exists: {}", model_path.display(), model_path.exists());
+        
         if !dylib_path.exists() || !model_path.exists() {
-            return Err("Separation engine files missing. Please install it first.".to_string());
+            return Err(format!(
+                "Separation engine files missing. \
+                 dylib={} (exists:{}), model={} (exists:{}). \
+                 Please reinstall the engine.",
+                dylib_path.display(), dylib_path.exists(),
+                model_path.display(), model_path.exists()
+            ));
         }
 
         // 1. Programmatically load onnxruntime shared library dynamically

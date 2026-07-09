@@ -49,6 +49,10 @@ async def get_innertube_video_url(video_id: str) -> str:
             formats = streaming_data.get("adaptiveFormats", []) + streaming_data.get("formats", [])
             video_formats = [f for f in formats if f.get("mimeType", "").startswith("video/") and f.get("url")]
             if video_formats:
+                # Prefer H264 (avc1) for maximum HTML5 video web player compatibility
+                h264_formats = [f for f in video_formats if 'codecs="avc' in f.get("mimeType", "")]
+                if h264_formats:
+                    return h264_formats[0]["url"]
                 return video_formats[0]["url"]
         raise RuntimeError("Failed to extract video stream from InnerTube API.")
 
@@ -362,6 +366,7 @@ async def merge_video_audio(
             
         cmd.extend([
             "-shortest",
+            "-movflags", "+faststart",
             str(output_path)
         ])
     else:
@@ -396,6 +401,7 @@ async def merge_video_audio(
             
         cmd.extend([
             "-shortest",
+            "-movflags", "+faststart",
             str(output_path)
         ])
 
@@ -442,6 +448,7 @@ async def merge_video_audio(
                 
             cmd.extend([
                 "-shortest",
+                "-movflags", "+faststart",
                 str(output_path)
             ])
         else:
@@ -478,6 +485,7 @@ async def merge_video_audio(
                 
             cmd.extend([
                 "-shortest",
+                "-movflags", "+faststart",
                 str(output_path)
             ])
             
